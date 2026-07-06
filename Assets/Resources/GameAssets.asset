@@ -27,3 +27,24 @@ MonoBehaviour:
   - weaponId: wpn_sniper_longuevue
     prefab: {fileID: 919132149155446097, guid: 50f9230695b484442977893cc955a7d3, type: 3}
   coverPrefab: {fileID: 0}
+  props:
+  - key: crate
+    prefab: {fileID: 919132149155446097, guid: 563337d70d833a54ab696f5872dfc28e, type: 3}
+  - key: crate-color
+    prefab: {fileID: 919132149155446097, guid: 892efd7ffa4e9fb4286430c79334c319, type: 3}
+  - key: column
+    prefab: {fileID: 919132149155446097, guid: 1c704fab2695d3848b930e7fe2f3b632, type: 3}
+  - key: column-rounded
+    prefab: {fileID: 919132149155446097, guid: 48382bb4be53e4a49bff36ff7a3231c1, type: 3}
+  - key: column-low
+    prefab: {fileID: 919132149155446097, guid: a803ae3cb1e281847a1af1d109c96707, type: 3}
+  - key: wall
+    prefab: {fileID: 919132149155446097, guid: 8fd85e3a9b1a7954c8748c4b252d3df8, type: 3}
+  - key: wall-low
+    prefab: {fileID: 919132149155446097, guid: 3edcc522b09c0f3429cdb8cf44aed176, type: 3}
+  - key: wall-corner
+    prefab: {fileID: 919132149155446097, guid: dbaff795b4c2f7e4cad75fe0c12fbb03, type: 3}
+  - key: stairs-small
+    prefab: {fileID: 919132149155446097, guid: 74d3dcbff9b2cab42b8ad9f84ba15112, type: 3}
+  - key: floor-thick
+    prefab: {fileID: 919132149155446097, guid: cdb3594a96037bb45acf6f3f1cd1c626, type: 3}

@@ -45,6 +45,15 @@ public static class AssetSetup
         }
         ga.weaponViewmodels = list.ToArray();
 
+        var propKeys = new[] { "crate", "crate-color", "column", "column-rounded", "column-low", "wall", "wall-low", "wall-corner", "stairs-small", "floor-thick" };
+        var props = new List<NamedProp>();
+        foreach (var k in propKeys)
+        {
+            var prefab = LoadModel($"Assets/Art/Environment/{k}.fbx");
+            if (prefab != null) props.Add(new NamedProp { key = k, prefab = prefab });
+        }
+        ga.props = props.ToArray();
+
         EditorUtility.SetDirty(ga);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();

@@ -107,11 +107,14 @@ namespace FirstGame.Core
             Prim.Box(arena, new Vector3(35f, 2, 10f), new Vector3(0.5f, 4, 70), ArtPalette.Wall, name: "Wall_E");
             Prim.Box(arena, new Vector3(-35f, 2, 10f), new Vector3(0.5f, 4, 70), ArtPalette.Wall, name: "Wall_W");
 
-            // Cover
-            Vector3[] covers = { new(-8, 0, 0), new(8, 0, 0), new(-5, 0, 12), new(5, 0, 12), new(-14, 0, 20), new(14, 0, 20) };
-            foreach (var c in covers)
-                Prim.Box(arena, c + new Vector3(0, 0.75f, 0), new Vector3(2, 1.5f, 2), ArtPalette.Cover, name: "Cover");
-            Prim.Box(arena, new Vector3(0, 1f, 24), new Vector3(6, 2f, 1.5f), ArtPalette.Cover, name: "Cover_Big");
+            // Cover: real modular props (Prototype Kit) if available, else primitive boxes
+            if (!LevelBuilder.BuildCombatCover(arena))
+            {
+                Vector3[] covers = { new(-8, 0, 0), new(8, 0, 0), new(-5, 0, 12), new(5, 0, 12), new(-14, 0, 20), new(14, 0, 20) };
+                foreach (var c in covers)
+                    Prim.Box(arena, c + new Vector3(0, 0.75f, 0), new Vector3(2, 1.5f, 2), ArtPalette.Cover, name: "Cover");
+                Prim.Box(arena, new Vector3(0, 1f, 24), new Vector3(6, 2f, 1.5f), ArtPalette.Cover, name: "Cover_Big");
+            }
 
             // Control zone marker (amber disc + pulse)
             var disc = Prim.Cylinder(arena, new Vector3(0, 0.06f, 18), 4f, 0.12f, ArtPalette.Objective, unlit: true, name: "ControlZone");

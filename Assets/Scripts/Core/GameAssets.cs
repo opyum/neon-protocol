@@ -10,6 +10,13 @@ namespace FirstGame.Core
         public GameObject prefab; // modèle d'arme (Kenney/Quaternius)
     }
 
+    [Serializable]
+    public class NamedProp
+    {
+        public string key;        // ex: "crate", "column", "wall" (voir Prototype Kit)
+        public GameObject prefab;
+    }
+
     /// <summary>
     /// Config d'assets importés. Glisse tes prefabs ici (Mixamo, Kenney...).
     /// Tout est optionnel : si un slot est vide, le jeu retombe sur les primitives.
@@ -28,6 +35,17 @@ namespace FirstGame.Core
 
         [Header("Décor (optionnel)")]
         public GameObject coverPrefab;
+
+        [Header("Décor modulaire (Prototype Kit)")]
+        public NamedProp[] props;
+
+        public GameObject Prop(string key)
+        {
+            if (props == null) return null;
+            foreach (var p in props)
+                if (p != null && p.key == key && p.prefab != null) return p.prefab;
+            return null;
+        }
 
         static GameAssets _instance;
         static bool _loaded;
