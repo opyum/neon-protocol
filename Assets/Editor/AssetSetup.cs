@@ -27,7 +27,8 @@ public static class AssetSetup
         }
 
         ga.enemyCharacterPrefab =
-            LoadModel("Assets/Synty/SidekickCharacters/Characters/HumanSpecies/HumanSpecies_01/HumanSpecies_01.prefab")
+            AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Mixamo/EnemyMixamo.prefab")   // animé (AnimSetup)
+            ?? LoadModel("Assets/Synty/SidekickCharacters/Characters/HumanSpecies/HumanSpecies_01/HumanSpecies_01.prefab")
             ?? LoadModel("Assets/Art/Characters/character-a.fbx");
         ga.characterScale = Vector3.one;
 
@@ -53,6 +54,27 @@ public static class AssetSetup
         {
             var prefab = LoadModel($"Assets/Art/Environment/{k}.fbx");
             if (prefab != null) props.Add(new NamedProp { key = k, prefab = prefab });
+        }
+        // Sci-Fi pack prefabs (URP-converted) — real HD cover/structures for the combat arena.
+        var packProps = new (string key, string path)[]
+        {
+            ("container_big",   "Assets/Sci-Fi Styled Modular Pack/Prefabs/Machines/container_big.prefab"),
+            ("container_small", "Assets/Sci-Fi Styled Modular Pack/Prefabs/Machines/container_small.prefab"),
+            ("storage_big",     "Assets/Sci-Fi Styled Modular Pack/Prefabs/Machines/storage_container_big.prefab"),
+            ("generator",       "Assets/Sci-Fi Styled Modular Pack/Prefabs/Machines/generator.prefab"),
+            ("capacitor",       "Assets/Sci-Fi Styled Modular Pack/Prefabs/Machines/Capacitor.prefab"),
+            ("shield_core",     "Assets/Sci-Fi Styled Modular Pack/Prefabs/Machines/Shield Core.prefab"),
+            ("battery",         "Assets/Sci-Fi Styled Modular Pack/Prefabs/Machines/Battery_big.prefab"),
+            ("half_wall",       "Assets/Sci-Fi Styled Modular Pack/Prefabs/Walls/Half walls/decorative_half_wall_1_LOD.prefab"),
+            ("wall_tall",       "Assets/Sci-Fi Styled Modular Pack/Prefabs/Walls/decorative_wall_1.prefab"),
+            ("crate_hd",        "Assets/Creepy_Cat/3D Scifi Kit Starter Kit_HD/Prefabs/Props/Crate_01.prefab"),
+            ("pillar",          "Assets/Creepy_Cat/3D Scifi Kit Starter Kit_HD/Prefabs/Walls/Column_01_Big.prefab"),
+            ("pipes",           "Assets/Creepy_Cat/3D Scifi Kit Starter Kit_HD/Prefabs/Stuff/Pipes_01.prefab"),
+        };
+        foreach (var (key, path) in packProps)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (prefab != null) props.Add(new NamedProp { key = key, prefab = prefab });
         }
         ga.props = props.ToArray();
 
