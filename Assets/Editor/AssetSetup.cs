@@ -26,7 +26,9 @@ public static class AssetSetup
             AssetDatabase.CreateAsset(ga, AssetPath);
         }
 
-        ga.enemyCharacterPrefab = LoadModel("Assets/Art/Characters/character-a.fbx");
+        ga.enemyCharacterPrefab =
+            LoadModel("Assets/Synty/SidekickCharacters/Characters/HumanSpecies/HumanSpecies_01/HumanSpecies_01.prefab")
+            ?? LoadModel("Assets/Art/Characters/character-a.fbx");
         ga.characterScale = Vector3.one;
 
         var map = new (string id, string file)[]

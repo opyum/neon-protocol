@@ -52,3 +52,11 @@ sysinfo.txt
 
 # Downloaded asset archives at project root (extracted models live in Assets/Art)
 /*.zip
+
+# Unity Asset Store packs (licence : ne pas redistribuer ; réimporter via Package Manager)
+/Assets/Synty/
+/Assets/Synty.meta
+/Assets/Sci-Fi Styled Modular Pack/
+/Assets/Sci-Fi Styled Modular Pack.meta
+/Assets/Creepy_Cat/
+/Assets/Creepy_Cat.meta
