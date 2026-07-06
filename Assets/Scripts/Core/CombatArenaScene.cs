@@ -100,12 +100,14 @@ namespace FirstGame.Core
         {
             var arena = new GameObject("CombatArena").transform;
 
-            Prim.Box(arena, new Vector3(0, -0.25f, 10f), new Vector3(70, 0.5f, 70), ArtPalette.Floor, smoothness: 0.12f, name: "Floor");
+            var floor = Prim.Box(arena, new Vector3(0, -0.25f, 10f), new Vector3(70, 0.5f, 70), ArtPalette.Floor, smoothness: 0.12f, name: "Floor");
+            floor.GetComponent<Renderer>().sharedMaterial = Surfaces.Floor;
 
-            Prim.Box(arena, new Vector3(0, 2, 45f), new Vector3(70, 4, 0.5f), ArtPalette.Wall, name: "Wall_N");
-            Prim.Box(arena, new Vector3(0, 2, -25f), new Vector3(70, 4, 0.5f), ArtPalette.Wall, name: "Wall_S");
-            Prim.Box(arena, new Vector3(35f, 2, 10f), new Vector3(0.5f, 4, 70), ArtPalette.Wall, name: "Wall_E");
-            Prim.Box(arena, new Vector3(-35f, 2, 10f), new Vector3(0.5f, 4, 70), ArtPalette.Wall, name: "Wall_W");
+            var wallMat = Surfaces.Metal;
+            SetMat(Prim.Box(arena, new Vector3(0, 2, 45f), new Vector3(70, 4, 0.5f), ArtPalette.Wall, name: "Wall_N"), wallMat);
+            SetMat(Prim.Box(arena, new Vector3(0, 2, -25f), new Vector3(70, 4, 0.5f), ArtPalette.Wall, name: "Wall_S"), wallMat);
+            SetMat(Prim.Box(arena, new Vector3(35f, 2, 10f), new Vector3(0.5f, 4, 70), ArtPalette.Wall, name: "Wall_E"), wallMat);
+            SetMat(Prim.Box(arena, new Vector3(-35f, 2, 10f), new Vector3(0.5f, 4, 70), ArtPalette.Wall, name: "Wall_W"), wallMat);
 
             // Cover: real modular props (Prototype Kit) if available, else primitive boxes
             if (!LevelBuilder.BuildCombatCover(arena))
@@ -121,8 +123,15 @@ namespace FirstGame.Core
             var col = disc.GetComponent<Collider>(); if (col) Object.Destroy(col);
             var pulse = disc.AddComponent<Pulse>(); pulse.color = ArtPalette.Objective; pulse.speed = 2.5f;
 
-            // Guide strips
-            Prim.NeonStrip(arena, new Vector3(0, 0.02f, 10), new Vector3(0.18f, 0.02f, 60), ArtPalette.NeonCyan, "Guide");
+            // Subtle neon edge strips along the side walls (not a big central line)
+            Prim.NeonStrip(arena, new Vector3(-34.4f, 0.3f, 10), new Vector3(0.1f, 0.05f, 68), ArtPalette.NeonCyan, "EdgeW");
+            Prim.NeonStrip(arena, new Vector3(34.4f, 0.3f, 10), new Vector3(0.1f, 0.05f, 68), ArtPalette.NeonCyan, "EdgeE");
+        }
+
+        static void SetMat(GameObject go, Material m)
+        {
+            var r = go.GetComponent<Renderer>();
+            if (r != null) r.sharedMaterial = m;
         }
     }
 }

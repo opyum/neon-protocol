@@ -11,33 +11,27 @@ namespace FirstGame.Core
             var ga = GameAssets.Instance;
             if (ga == null || ga.Prop("crate") == null) return false;
 
-            var wallMat = ArtPalette.MakeMaterial(ArtPalette.Wall, 0f, 0.2f);
-            var coverMat = ArtPalette.MakeMaterial(ArtPalette.Cover, 0f, 0.25f);
-            var metalMat = ArtPalette.MakeMaterial(ArtPalette.Metal, 0.6f, 0.5f);
+            var mat = Surfaces.Metal; // real textured metal (with flat fallback)
 
             // Columns — site corners, side pillars
             foreach (var (x, z) in new[] { (-5f, 13f), (5f, 13f), (-5f, 23f), (5f, 23f), (-12f, 18f), (12f, 18f) })
-                Prop("column", arena, x, z, 0f, 3.5f, true, wallMat);
+                Prop("column", arena, x, z, 0f, 3.5f, true, mat);
             // Rounded pillars — mid & far sightline breakers
-            foreach (var (x, z) in new[] { (0f, 6f), (0f, 32f) })
-                Prop("column-rounded", arena, x, z, 0f, 3.6f, true, metalMat);
+            foreach (var (x, z) in new[] { (0f, 6f), (0f, 32f), (-18f, 6f), (18f, 6f) })
+                Prop("column-rounded", arena, x, z, 0f, 3.6f, true, mat);
 
             // Crates — cover
             foreach (var (x, z) in new[] { (-8f, 4f), (8f, 4f), (-4f, -12f), (4f, -12f), (-15f, 22f), (15f, 22f) })
-                Prop("crate", arena, x, z, 0f, 1.4f, false, coverMat);
-            foreach (var (x, z) in new[] { (0f, 0f), (-9f, 10f), (9f, 10f) })
-                Prop("crate-color", arena, x, z, 0f, 1.4f, false, coverMat);
+                Prop("crate", arena, x, z, 0f, 1.4f, false, mat);
+            foreach (var (x, z) in new[] { (0f, 0f), (-9f, 10f), (9f, 10f), (-16f, 12f), (16f, 12f) })
+                Prop("crate-color", arena, x, z, 0f, 1.4f, false, mat);
 
             // Low walls — chest-high cover around the site
-            Prop("wall-low", arena, 0f, 12f, 0f, 1.2f, true, coverMat);
-            Prop("wall-low", arena, -5f, 18f, 90f, 1.2f, true, coverMat);
-            Prop("wall-low", arena, 5f, 18f, 90f, 1.2f, true, coverMat);
-            Prop("wall-low", arena, -6f, 28f, 0f, 1.2f, true, coverMat);
-            Prop("wall-low", arena, 6f, 28f, 0f, 1.2f, true, coverMat);
-
-            // Tall walls — lane sightline blockers
-            Prop("wall", arena, -13f, 12f, 90f, 3f, true, wallMat);
-            Prop("wall", arena, 13f, 12f, 90f, 3f, true, wallMat);
+            Prop("wall-low", arena, 0f, 12f, 0f, 1.2f, true, mat);
+            Prop("wall-low", arena, -5f, 18f, 90f, 1.2f, true, mat);
+            Prop("wall-low", arena, 5f, 18f, 90f, 1.2f, true, mat);
+            Prop("wall-low", arena, -6f, 28f, 0f, 1.2f, true, mat);
+            Prop("wall-low", arena, 6f, 28f, 0f, 1.2f, true, mat);
 
             return true;
         }

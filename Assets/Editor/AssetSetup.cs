@@ -54,10 +54,24 @@ public static class AssetSetup
         }
         ga.props = props.ToArray();
 
+        // Mark the normal maps so Unity decodes them correctly.
+        SetNormalMap("Assets/Resources/Textures/concrete_normal.jpg");
+        SetNormalMap("Assets/Resources/Textures/metal_normal.jpg");
+
         EditorUtility.SetDirty(ga);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log($"[AssetSetup] GameAssets: perso={(ga.enemyCharacterPrefab != null)}, armes={list.Count}");
+    }
+
+    static void SetNormalMap(string path)
+    {
+        var ti = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (ti != null && ti.textureType != TextureImporterType.NormalMap)
+        {
+            ti.textureType = TextureImporterType.NormalMap;
+            ti.SaveAndReimport();
+        }
     }
 
     static GameObject LoadModel(string path)
