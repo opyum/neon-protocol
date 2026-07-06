@@ -17,7 +17,7 @@ namespace FirstGame.Core
             var rig = PlayerRig.Build(new Vector3(0, 0.1f, -8f), Quaternion.identity);
             var switcher = rig.player.AddComponent<WeaponSwitcher>();
             switcher.weapon = rig.weapon;
-            rig.player.AddComponent<EscapeToMenu>();
+            new GameObject("[PauseMenu]").AddComponent<FirstGame.UI.PauseMenu>();
 
             BuildTargets();
 

@@ -19,7 +19,7 @@ namespace FirstGame.Core
             BuildArena();
 
             var rig = PlayerRig.Build(new Vector3(0, 0.1f, -6f), Quaternion.identity);
-            rig.player.AddComponent<EscapeToMenu>();
+            new GameObject("[PauseMenu]").AddComponent<FirstGame.UI.PauseMenu>();
             var health = rig.health;
             var weapon = rig.weapon;
             var abilities = rig.abilities;

@@ -14,7 +14,7 @@ namespace FirstGame.Core
             BuildArena();
 
             var rig = PlayerRig.Build(new Vector3(0, 0.1f, -18f), Quaternion.identity);
-            rig.player.AddComponent<EscapeToMenu>();
+            new GameObject("[PauseMenu]").AddComponent<FirstGame.UI.PauseMenu>();
 
             UIFactory.EnsureEventSystem();
             var hudCanvas = UIFactory.CreateCanvas("HUDCanvas", 0);

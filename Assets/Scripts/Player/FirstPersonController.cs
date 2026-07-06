@@ -1,4 +1,5 @@
 using UnityEngine;
+using FirstGame.Core;
 using FirstGame.Progression;
 
 namespace FirstGame.Player
@@ -52,8 +53,9 @@ namespace FirstGame.Player
 
         void Look()
         {
-            float mx = Input.GetAxis("Mouse X") * mouseSensitivity;
-            float my = Input.GetAxis("Mouse Y") * mouseSensitivity;
+            float sens = Settings.MouseSensitivity;
+            float mx = Input.GetAxis("Mouse X") * sens;
+            float my = Input.GetAxis("Mouse Y") * sens;
 
             AccumYaw += Mathf.Abs(mx);
             AccumPitch += Mathf.Abs(my);

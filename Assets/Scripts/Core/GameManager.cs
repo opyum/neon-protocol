@@ -23,6 +23,7 @@ namespace FirstGame.Core
             Instance = go.AddComponent<GameManager>();
             DontDestroyOnLoad(go);
 
+            Settings.Apply();
             new GameObject("[Music]").AddComponent<MusicPlayer>();
 
             SceneManager.sceneLoaded += Instance.OnSceneLoaded;
