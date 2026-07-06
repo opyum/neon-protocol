@@ -26,6 +26,12 @@ namespace FirstGame.Progression
         public string ability2 = "bouclier_de_lumiere";
         public string equipmentId = "equip_armure_legere"; // armour slot
         public string utilityId = "equip_fumigene";        // utility slot (key G)
+        public string agentId = "agent_brasier";           // chosen agent (fixes the 3 abilities)
+
+        // Ranked (ELO) — updated by the "Classé contre bots" mode, reused later by PvP.
+        public int elo = 1000;
+        public int rankedGames = 0;
+        public int rankedWins = 0;
 
         // Invested stat points (see GDD)
         public int vitalite = 0;      // +6 HP / pt
@@ -106,6 +112,20 @@ namespace FirstGame.Progression
         public void SetEquipment(string id) { equipmentId = id; Save(); }
         public void SetUtility(string id) { utilityId = id; Save(); }
 
+        /// <summary>Pick an agent — copies its 3 fixed abilities into the loadout slots.</summary>
+        public void SetAgent(string id)
+        {
+            agentId = id;
+            var a = FirstGame.Agents.AgentCatalog.ById(id);
+            if (a != null)
+            {
+                SetAbilityRaw(0, a.abilityIds[0]);
+                SetAbilityRaw(1, a.abilityIds[1]);
+                SetAbilityRaw(2, a.abilityIds[2]);
+            }
+            Save();
+        }
+
         /// <summary>Refund every invested point (free respec between matches).</summary>
         public void Respec()
         {
@@ -122,18 +142,38 @@ namespace FirstGame.Progression
         public float AbilityPowerMultiplier => 1f + Mathf.Min(amplification, StatCap) * 0.03f; // cap +60%
         public float RegenPerSecond => regeneration * 0.5f;
 
-        public string Rank
+        // Ranked tier from ELO (FR names). This is the real competitive rank.
+        public string Rank => RankedTier;
+
+        public string RankedTier
         {
             get
             {
-                // Purely cosmetic preview until ELO/PvP (phase 2). Based on level for now.
-                if (level >= 27) return "Champion";
-                if (level >= 22) return "Diamant";
-                if (level >= 16) return "Platine";
-                if (level >= 10) return "Or";
-                if (level >= 5) return "Argent";
-                return "Bronze";
+                if (elo >= 2500) return "Champion";
+                if (elo >= 2300) return "Maître";
+                if (elo >= 2050) return "Diamant";
+                if (elo >= 1800) return "Émeraude";
+                if (elo >= 1550) return "Platine";
+                if (elo >= 1300) return "Or";
+                if (elo >= 1050) return "Argent";
+                if (elo >= 800) return "Bronze";
+                return "Fer";
             }
+        }
+
+        /// <summary>ELO update. K=40 during placement (10 games), then 24, then 16 at 2100+.
+        /// Returns the point delta (signed).</summary>
+        public int ApplyMatchResult(bool win, int opponentRating)
+        {
+            int k = rankedGames < 10 ? 40 : (elo < 2100 ? 24 : 16);
+            float s = win ? 1f : 0f;
+            float e = 1f / (1f + Mathf.Pow(10f, (opponentRating - elo) / 400f));
+            int delta = Mathf.RoundToInt(k * (s - e));
+            elo = Mathf.Max(0, elo + delta);
+            rankedGames++;
+            if (win) rankedWins++;
+            Save();
+            return delta;
         }
 
         // ---- Persistence ----

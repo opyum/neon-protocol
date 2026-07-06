@@ -27,6 +27,8 @@ namespace FirstGame.Campaign
         readonly List<EnemyBot> _bots = new();
         int _lives, _deaths;
         bool _over;
+        bool _ranked;
+        int _rankedOpp;
 
         Text _livesLabel, _enemiesLabel;
         Image _captureFill;
@@ -54,6 +56,62 @@ namespace FirstGame.Campaign
                 default: _lives = 3; StartCoroutine(RunExamen()); break;
             }
             UpdateLives();
+        }
+
+        // ---------- Ranked (ELO vs bots) ----------
+        public void StartRanked()
+        {
+            _over = false; _deaths = 0; _ranked = true;
+            BuildMiniHud();
+            health.OnDied += OnPlayerDied;
+            SetControls(true);
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            _lives = 1;
+            UpdateLives();
+            StartCoroutine(RunRanked());
+        }
+
+        IEnumerator RunRanked()
+        {
+            var p = PlayerProfile.Current;
+            int elo = p.elo;
+            BotTier tier;
+            if (elo < 900) { tier = BotTier.Recrue; _rankedOpp = 700; }
+            else if (elo < 1250) { tier = BotTier.Soldat; _rankedOpp = 1000; }
+            else if (elo < 1650) { tier = BotTier.Veteran; _rankedOpp = 1400; }
+            else { tier = BotTier.Elite; _rankedOpp = 1900; }
+
+            ui.ShowStep(1, 1, $"CLASSÉ — {p.RankedTier} ({elo}) : élimine l'adversaire.",
+                $"Adversaire estimé ~{_rankedOpp}. 1 vie. Gagne pour monter, perds pour descendre.");
+            health.Heal(999f);
+            bool botDead = false;
+            var bot = SpawnBot(new Vector3(0, 0, 0), tier);
+            bot.OnDied += _ => botDead = true;
+            UpdateEnemies();
+            while (!botDead && !_over) { UpdateEnemies(); yield return null; }
+            if (_over) yield break;
+            RankedEnd(true);
+        }
+
+        void RankedEnd(bool win)
+        {
+            if (_over) return;
+            _over = true;
+            SetControls(false);
+            DespawnBots();
+            var p = PlayerProfile.Current;
+            string oldTier = p.RankedTier;
+            int delta = p.ApplyMatchResult(win, _rankedOpp);
+            string tierLine = oldTier != p.RankedTier ? $"{oldTier} → {p.RankedTier}" : p.RankedTier;
+            string sign = delta >= 0 ? "+" : "";
+            ui.ShowResult(
+                win ? "VICTOIRE CLASSÉE" : "DÉFAITE CLASSÉE",
+                $"{sign}{delta} ELO   •   {p.elo}  ({tierLine})",
+                win ? "Bien joué. Rejoue pour continuer à grimper." : "Réessaie et remonte au prochain duel.",
+                win ? ArtPalette.NeonCyan : ArtPalette.Enemy,
+                "REJOUER", () => GameManager.LoadScene(SceneNames.CombatArena),
+                () => GameManager.LoadScene(SceneNames.MainMenu));
         }
 
         // ---------- Missions ----------
@@ -155,6 +213,7 @@ namespace FirstGame.Campaign
             if (_over) return;
             _deaths++; _lives--;
             UpdateLives();
+            if (_ranked) { if (_lives <= 0) RankedEnd(false); return; }
             if (_lives <= 0) { ui?.Toast("Éliminé !"); Lose(); }
             else ui?.Toast($"Éliminé ! Vies restantes : {_lives}");
         }

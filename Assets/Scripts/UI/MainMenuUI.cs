@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using FirstGame.Core;
 using FirstGame.Progression;
 using FirstGame.Abilities;
+using FirstGame.Agents;
 using FirstGame.Combat;
 using FirstGame.Equipment;
 
@@ -25,6 +26,9 @@ namespace FirstGame.UI
         GameObject _equipmentPanel;
         readonly List<(string id, Image img)> _armorButtons = new();
         readonly List<(string id, Image img)> _utilButtons = new();
+
+        GameObject _agentsPanel;
+        readonly List<(string id, Image border)> _agentCards = new();
 
         static readonly (string id, string name, string effect)[] Stats =
         {
@@ -74,16 +78,17 @@ namespace FirstGame.UI
             (string title, string sub, Color accent)[] items =
             {
                 ("CAMPAGNE",           "Tutoriel jouable — apprends les bases", ArtPalette.NeonCyan),
-                ("MISSIONS DE COMBAT", "Duel, Round, Examen — contre des bots",  ArtPalette.Enemy),
+                ("MISSIONS DE COMBAT", "Duel, Round, Examen, Classé — vs bots",  ArtPalette.Enemy),
                 ("ENTRAÎNEMENT LIBRE", "Stand de tir : règle ta visée",         ArtPalette.NeonCyan),
-                ("ARSENAL",            "Arme, 3 sorts et équipement",           ArtPalette.Objective),
+                ("AGENTS",             "Choisis ton agent et ses 3 sorts",      ArtPalette.NeonMag),
+                ("ARSENAL",            "Arme et équipement",                    ArtPalette.Objective),
                 ("PERSONNAGE",         "Niveaux & points de statistiques",      ArtPalette.Player),
                 ("QUITTER",            "Fermer le jeu",                          ArtPalette.Enemy),
             };
             for (int i = 0; i < items.Length; i++)
             {
                 int idx = i;
-                MenuButton(root, -340 - i * 100, items[i].accent, items[i].title, items[i].sub, () => OnMenu(idx));
+                MenuButton(root, -330 - i * 92, items[i].accent, items[i].title, items[i].sub, () => OnMenu(idx));
             }
 
             // --- Level chip (top-right) ---
@@ -105,6 +110,7 @@ namespace FirstGame.UI
             BuildCharacterPanel(root);
             BuildLoadoutPanel(root);
             BuildEquipmentPanel(root);
+            BuildAgentsPanel(root);
         }
 
         void OnMenu(int index)
@@ -114,9 +120,10 @@ namespace FirstGame.UI
                 case 0: GameManager.LoadScene(SceneNames.Tutorial); break;
                 case 1: GameManager.LoadScene(SceneNames.CombatArena); break;
                 case 2: GameManager.LoadScene(SceneNames.PracticeRange); break;
-                case 3: _loadoutPanel.SetActive(true); RefreshLoadout(); break;
-                case 4: _characterPanel.SetActive(true); RefreshCharacter(); break;
-                case 5: Quit(); break;
+                case 3: _agentsPanel.SetActive(true); RefreshAgents(); break;
+                case 4: _loadoutPanel.SetActive(true); RefreshLoadout(); break;
+                case 5: _characterPanel.SetActive(true); RefreshCharacter(); break;
+                case 6: Quit(); break;
                 default: break;
             }
         }
@@ -124,7 +131,7 @@ namespace FirstGame.UI
         void RefreshLevelChip()
         {
             var p = PlayerProfile.Current;
-            _levelChip.text = $"NIVEAU {p.level}  •  {p.Rank.ToUpper()}";
+            _levelChip.text = $"NIVEAU {p.level}  •  {p.RankedTier.ToUpper()} {p.elo}";
         }
 
         void MenuButton(Transform parent, float y, Color accent, string title, string subtitle, System.Action onClick)
@@ -413,6 +420,80 @@ namespace FirstGame.UI
                 if (a == null) continue;
                 if (_equipNames[i] != null) _equipNames[i].text = a.nameFr;
                 if (_equipSwatches[i] != null) _equipSwatches[i].color = a.color;
+            }
+        }
+
+        void BuildAgentsPanel(Transform root)
+        {
+            _agentsPanel = UIFactory.AddChild(root, "AgentsPanel").gameObject;
+            UIFactory.Stretch((RectTransform)_agentsPanel.transform);
+            _agentsPanel.AddComponent<Image>().color = new Color(ArtPalette.Sky.r, ArtPalette.Sky.g, ArtPalette.Sky.b, 0.96f);
+            var t = _agentsPanel.transform;
+
+            var head = UIFactory.Label(t, "AGENTS", 44, ArtPalette.NeonMag, TextAnchor.UpperLeft, FontStyle.Bold);
+            UIFactory.Place(head.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(90, -70), new Vector2(700, 54));
+            var sub = UIFactory.Label(t, "Choisis ton agent — il définit tes 3 sorts (E / F / C). L'arme se règle dans l'Arsenal.", 20, ArtPalette.UiDim, TextAnchor.UpperLeft);
+            UIFactory.Place(sub.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(92, -124), new Vector2(1200, 28));
+
+            var agents = AgentCatalog.All;
+            for (int i = 0; i < agents.Count; i++)
+            {
+                var a = agents[i];
+                int col = i % 2, rowIdx = i / 2;
+                var card = UIFactory.AddChild(t, "Agent_" + a.id);
+                UIFactory.Place(card, new Vector2(0, 1), new Vector2(0, 1), new Vector2(92 + col * 740, -170 - rowIdx * 300), new Vector2(710, 284));
+                var border = card.gameObject.AddComponent<Image>();
+                _agentCards.Add((a.id, border));
+
+                var inner = UIFactory.AddChild(card, "Inner");
+                UIFactory.Place(inner, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(700, 274));
+                UIFactory.Panel(inner, new Color(ArtPalette.UiInk.r, ArtPalette.UiInk.g, ArtPalette.UiInk.b, 0.96f));
+                var it = inner.transform;
+
+                var name = UIFactory.Label(it, a.nameFr, 32, a.color, TextAnchor.UpperLeft, FontStyle.Bold);
+                UIFactory.Place(name.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(22, -14), new Vector2(400, 38));
+                var role = UIFactory.Label(it, a.role.ToUpper(), 17, ArtPalette.UiDim, TextAnchor.UpperLeft, FontStyle.Bold);
+                UIFactory.Place(role.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(24, -52), new Vector2(300, 22));
+
+                for (int s = 0; s < 3; s++)
+                {
+                    var ab = AbilityCatalog.ById(a.abilityIds[s]);
+                    var sw = UIFactory.AddChild(it, "Sw" + s);
+                    UIFactory.Place(sw, new Vector2(0, 1), new Vector2(0, 1), new Vector2(24 + s * 224, -86), new Vector2(30, 30));
+                    sw.gameObject.AddComponent<Image>().color = ab != null ? ab.color : Color.gray;
+                    var sn = UIFactory.Label(it, ab != null ? ab.nameFr : a.abilityIds[s], 14, ArtPalette.UiText, TextAnchor.MiddleLeft);
+                    UIFactory.Place(sn.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(58 + s * 224, -86), new Vector2(168, 30));
+                }
+
+                var passive = UIFactory.Label(it, a.passiveFr, 14, ArtPalette.UiDim, TextAnchor.UpperLeft);
+                UIFactory.Place(passive.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(24, -128), new Vector2(660, 60));
+
+                var selBtn = UIFactory.AddChild(it, "Select");
+                UIFactory.Place(selBtn, new Vector2(0, 0), new Vector2(0, 0), new Vector2(24, 16), new Vector2(220, 50));
+                string id = a.id;
+                UIFactory.Button(selBtn, "SÉLECTIONNER", a.color, ArtPalette.UiInk,
+                    () => { PlayerProfile.Current.SetAgent(id); RefreshAgents(); RefreshLevelChip(); }, 20);
+
+                var hint = UIFactory.Label(it, "Stat conseillée : " + a.statBias, 14, ArtPalette.UiDim, TextAnchor.MiddleRight);
+                UIFactory.Place(hint.rectTransform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-20, 30), new Vector2(360, 24));
+            }
+
+            var close = UIFactory.AddChild(t, "CloseAgents");
+            UIFactory.Place(close, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-90, 50), new Vector2(240, 60));
+            UIFactory.Button(close, "RETOUR", ArtPalette.NeonCyan, ArtPalette.UiInk, () => { _agentsPanel.SetActive(false); RefreshLevelChip(); }, 26);
+
+            _agentsPanel.SetActive(false);
+        }
+
+        void RefreshAgents()
+        {
+            var p = PlayerProfile.Current;
+            foreach (var (id, border) in _agentCards)
+            {
+                var a = AgentCatalog.ById(id);
+                if (a == null || border == null) continue;
+                bool sel = id == p.agentId;
+                border.color = sel ? a.color : new Color(a.color.r, a.color.g, a.color.b, 0.22f);
             }
         }
 
