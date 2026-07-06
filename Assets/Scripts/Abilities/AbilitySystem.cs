@@ -117,7 +117,7 @@ namespace FirstGame.Abilities
                                 d.TakeDamage(dmg, hit.point, hit.normal);
                                 OnAbilityHit?.Invoke(slot, a, d);
                             }
-                            Burst(hit.point, a.color);
+                            Vfx.Explosion(hit.point, a.color);
                         }
                         else Burst(cam.transform.position + cam.transform.forward * 3f, a.color);
                     }
@@ -245,15 +245,7 @@ namespace FirstGame.Abilities
             Burst(origin + fwd * 2f, a.color);
         }
 
-        void Burst(Vector3 pos, Color color)
-        {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            var col = go.GetComponent<Collider>(); if (col) Destroy(col);
-            go.transform.position = pos;
-            go.transform.localScale = Vector3.one * 0.7f;
-            go.GetComponent<Renderer>().sharedMaterial = ArtPalette.MakeUnlit(color);
-            Destroy(go, 0.35f);
-        }
+        void Burst(Vector3 pos, Color color) => Vfx.Burst(pos, color);
 
         void SpawnPlaceholderVolume(AbilityData a)
         {

@@ -95,10 +95,12 @@ namespace FirstGame.Combat
             Ray ray = new Ray(cam.transform.position, cam.transform.forward);
             Vector3 tracerStart = muzzle != null ? muzzle.position : ray.origin;
             Vector3 end = ray.origin + ray.direction * weapon.range;
+            Vfx.Muzzle(muzzle != null ? muzzle.position : ray.origin + ray.direction * 0.5f, ray.direction, ArtPalette.NeonCyan);
 
             if (Physics.Raycast(ray, out var hit, weapon.range, hitMask, QueryTriggerInteraction.Ignore))
             {
                 end = hit.point;
+                Vfx.Impact(hit.point, ArtPalette.NeonCyan);
                 var head = hit.collider.GetComponent<HeadHitbox>();
                 var target = hit.collider.GetComponentInParent<IDamageable>();
                 if (target != null && target.IsAlive)

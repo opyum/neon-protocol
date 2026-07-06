@@ -13,8 +13,17 @@ namespace FirstGame.Core
 
         public static CharacterVisual Attach(Transform parent, GameObject prefab, float targetHeight, Color tint)
         {
-            var mat = ArtPalette.MakeEmissive(tint, 0.35f);
-            var model = ModelUtil.Spawn(prefab, parent, targetHeight, byHeight: true, mat);
+            // Keep the model's real skin (textures). Only tint if it has no material (e.g. Kenney
+            // imported without materials) — that both avoids pink under URP and keeps readability.
+            var model = ModelUtil.Spawn(prefab, parent, targetHeight, byHeight: true, material: null);
+            var rends = model.GetComponentsInChildren<Renderer>();
+            bool hasSkin = rends.Length > 0 && rends[0].sharedMaterial != null;
+            if (!hasSkin)
+            {
+                var mat = ArtPalette.MakeEmissive(tint, 0.35f);
+                foreach (var r in rends) r.sharedMaterial = mat;
+            }
+
             var cv = model.AddComponent<CharacterVisual>();
             cv._animator = model.GetComponentInChildren<Animator>();
             if (cv._animator != null) cv._animator.applyRootMotion = false; // bot controller drives movement
