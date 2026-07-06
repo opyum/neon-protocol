@@ -91,6 +91,35 @@ public static class AnimSetup
         Debug.Log($"[AnimSetup] OK — controller + prefab créés, ennemi = {(prefab != null ? prefab.name : "null")}");
     }
 
+    [MenuItem("NEON/Ennemi Synty animé")]
+    public static void BuildSyntyEnemy()
+    {
+        const string syntyPrefabPath = "Assets/Synty/SidekickCharacters/Characters/HumanSpecies/HumanSpecies_01/HumanSpecies_01.prefab";
+        const string avatarPath = "Assets/Synty/SidekickCharacters/Characters/HumanSpecies/HumanSpecies_01/Meshes/HumanSpecies_01-avatar.asset";
+        const string syntyEnemyPath = Dir + "/EnemySynty.prefab";
+
+        var syntyPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(syntyPrefabPath);
+        var avatar = AssetDatabase.LoadAssetAtPath<Avatar>(avatarPath);
+        var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
+        if (syntyPrefab == null) { Debug.LogError("[AnimSetup] perso Synty introuvable — importe le pack Synty."); return; }
+        if (ctrl == null) { Debug.LogError("[AnimSetup] lance d'abord 'NEON ▸ Configurer l'animation' (controller manquant)."); return; }
+
+        var inst = (GameObject)PrefabUtility.InstantiatePrefab(syntyPrefab);
+        var anim = inst.GetComponent<Animator>();
+        if (anim == null) anim = inst.AddComponent<Animator>();
+        anim.runtimeAnimatorController = ctrl;
+        if (avatar != null) anim.avatar = avatar;
+        anim.applyRootMotion = false;
+        var prefab = PrefabUtility.SaveAsPrefabAsset(inst, syntyEnemyPath);
+        Object.DestroyImmediate(inst);
+
+        var ga = AssetDatabase.LoadAssetAtPath<GameAssets>("Assets/Resources/GameAssets.asset");
+        if (ga != null && prefab != null) { ga.enemyCharacterPrefab = prefab; EditorUtility.SetDirty(ga); }
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log($"[AnimSetup] Ennemi Synty animé (skin + anims Mixamo) créé: {(prefab != null ? prefab.name : "null")}");
+    }
+
     static void MakeHumanoid(string path, bool? loop)
     {
         var imp = AssetImporter.GetAtPath(path) as ModelImporter;

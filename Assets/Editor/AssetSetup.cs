@@ -27,7 +27,8 @@ public static class AssetSetup
         }
 
         ga.enemyCharacterPrefab =
-            AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Mixamo/EnemyMixamo.prefab")   // animé (AnimSetup)
+            AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Mixamo/EnemySynty.prefab")    // Synty skin + anims Mixamo
+            ?? AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Mixamo/EnemyMixamo.prefab") // X Bot animé
             ?? LoadModel("Assets/Synty/SidekickCharacters/Characters/HumanSpecies/HumanSpecies_01/HumanSpecies_01.prefab")
             ?? LoadModel("Assets/Art/Characters/character-a.fbx");
         ga.characterScale = Vector3.one;
