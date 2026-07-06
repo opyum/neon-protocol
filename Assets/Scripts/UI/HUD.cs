@@ -18,8 +18,15 @@ namespace FirstGame.UI
         Image _healthFill, _shieldFill;
         Text _healthText, _ammoText, _weaponName;
         Image _hitmarker;
+        Image _damageVignette;
+        float _flashAlpha;
+        float _lastHp = -1f;
         readonly Image[] _abilityFills = new Image[3];
         readonly Text[] _abilityCharges = new Text[3];
+
+        static readonly Color HpGreen = new Color(0.24f, 0.86f, 0.52f);
+        static readonly Color HpYellow = new Color(0.96f, 0.78f, 0.22f);
+        static readonly Color HpRed = new Color(0.92f, 0.26f, 0.30f);
 
         void Start()
         {
@@ -54,6 +61,17 @@ namespace FirstGame.UI
 
         void Update()
         {
+            // Damage flash fade + low-health red pulse
+            if (_damageVignette != null)
+            {
+                float pulse = 0f;
+                if (playerHealth != null && playerHealth.IsAlive && playerHealth.MaxHealth > 0f
+                    && playerHealth.Health / playerHealth.MaxHealth < 0.3f)
+                    pulse = 0.16f + 0.12f * Mathf.Sin(Time.time * 5f);
+                _flashAlpha = Mathf.Max(_flashAlpha - Time.deltaTime * 2.8f, pulse);
+                var c = _damageVignette.color; c.a = _flashAlpha; _damageVignette.color = c;
+            }
+
             if (abilities == null) return;
             for (int i = 0; i < 3; i++)
             {
@@ -66,6 +84,15 @@ namespace FirstGame.UI
         {
             var canvas = GetComponent<Canvas>();
             var root = canvas != null ? canvas.transform : transform;
+
+            // Damage vignette (red flash on hit; pulses when critical). Behind the rest of the HUD.
+            var dv = UIFactory.AddChild(root, "DamageVignette");
+            UIFactory.Stretch(dv);
+            _damageVignette = dv.gameObject.AddComponent<Image>();
+            _damageVignette.sprite = Tex.Vignette;
+            _damageVignette.type = Image.Type.Simple;
+            _damageVignette.color = new Color(0.92f, 0.08f, 0.08f, 0f);
+            _damageVignette.raycastTarget = false;
 
             // Crosshair (4 ticks + centre dot)
             var cross = UIFactory.AddChild(root, "Crosshair");
@@ -81,23 +108,33 @@ namespace FirstGame.UI
             _hitmarker = hm.gameObject.AddComponent<Image>();
             _hitmarker.color = new Color(1, 1, 1, 0);
 
-            // Health / shield block (bottom-left)
+            // Health / shield block (bottom-left, large & readable)
             var block = UIFactory.AddChild(root, "HealthBlock");
-            UIFactory.Place(block, Vector2.zero, Vector2.zero, new Vector2(40, 48), new Vector2(360, 74));
-            UIFactory.Panel(block, new Color(ArtPalette.UiInk.r, ArtPalette.UiInk.g, ArtPalette.UiInk.b, 0.55f));
+            UIFactory.Place(block, Vector2.zero, Vector2.zero, new Vector2(40, 40), new Vector2(480, 122));
+            UIFactory.Panel(block, new Color(ArtPalette.UiInk.r, ArtPalette.UiInk.g, ArtPalette.UiInk.b, 0.7f));
+            var accent = UIFactory.AddChild(block, "Accent");
+            UIFactory.Place(accent, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(0, 0), new Vector2(6, 122));
+            accent.gameObject.AddComponent<Image>().color = HpGreen;
 
+            // Big HP number
+            _healthText = UIFactory.Label(block, "100", 62, HpGreen, TextAnchor.MiddleLeft, FontStyle.Bold);
+            UIFactory.Place(_healthText.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(20, -6), new Vector2(180, 78));
+            var pv = UIFactory.Label(block, "PV", 20, ArtPalette.UiDim, TextAnchor.UpperLeft, FontStyle.Bold);
+            UIFactory.Place(pv.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(22, -84), new Vector2(80, 26));
+
+            // Wide health bar (colour-coded)
             var hpBg = UIFactory.AddChild(block, "HpBg");
-            UIFactory.Place(hpBg, new Vector2(0, 1), new Vector2(0, 1), new Vector2(12, -12), new Vector2(336, 22));
-            hpBg.gameObject.AddComponent<Image>().color = new Color(0, 0, 0, 0.6f);
-            _healthFill = MakeBar(hpBg, ArtPalette.Player);
+            UIFactory.Place(hpBg, new Vector2(0, 1), new Vector2(0, 1), new Vector2(190, -20), new Vector2(270, 34));
+            hpBg.gameObject.AddComponent<Image>().color = new Color(0, 0, 0, 0.75f);
+            _healthFill = MakeBar(hpBg, HpGreen);
 
+            // Shield bar (thin, cyan)
             var shBg = UIFactory.AddChild(block, "ShieldBg");
-            UIFactory.Place(shBg, new Vector2(0, 1), new Vector2(0, 1), new Vector2(12, -40), new Vector2(336, 12));
-            shBg.gameObject.AddComponent<Image>().color = new Color(0, 0, 0, 0.6f);
+            UIFactory.Place(shBg, new Vector2(0, 1), new Vector2(0, 1), new Vector2(190, -64), new Vector2(270, 14));
+            shBg.gameObject.AddComponent<Image>().color = new Color(0, 0, 0, 0.75f);
             _shieldFill = MakeBar(shBg, ArtPalette.NeonCyan);
-
-            _healthText = UIFactory.Label(block, "100", 22, ArtPalette.UiText, TextAnchor.MiddleRight);
-            UIFactory.Place(_healthText.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(12, -12), new Vector2(330, 22));
+            var shLabel = UIFactory.Label(block, "BOUCLIER", 13, ArtPalette.UiDim, TextAnchor.UpperLeft);
+            UIFactory.Place(shLabel.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(190, -82), new Vector2(160, 18));
 
             // Ammo (bottom-right)
             var ammoBlock = UIFactory.AddChild(root, "AmmoBlock");
@@ -164,8 +201,13 @@ namespace FirstGame.UI
 
         void OnHealth(float h, float max)
         {
-            if (_healthFill != null) _healthFill.fillAmount = max > 0 ? h / max : 0;
-            if (_healthText != null) _healthText.text = Mathf.CeilToInt(h).ToString();
+            float ratio = max > 0 ? h / max : 0f;
+            var color = ratio > 0.5f ? HpGreen : (ratio > 0.25f ? HpYellow : HpRed);
+            if (_healthFill != null) { _healthFill.fillAmount = ratio; _healthFill.color = color; }
+            if (_healthText != null) { _healthText.text = Mathf.CeilToInt(h).ToString(); _healthText.color = color; }
+
+            if (_lastHp >= 0f && h < _lastHp) _flashAlpha = 0.8f; // took damage -> red screen flash
+            _lastHp = h;
         }
 
         void OnShield(float s)
