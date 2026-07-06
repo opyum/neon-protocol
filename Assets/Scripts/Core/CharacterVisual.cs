@@ -17,6 +17,7 @@ namespace FirstGame.Core
             var model = ModelUtil.Spawn(prefab, parent, targetHeight, byHeight: true, mat);
             var cv = model.AddComponent<CharacterVisual>();
             cv._animator = model.GetComponentInChildren<Animator>();
+            if (cv._animator != null) cv._animator.applyRootMotion = false; // bot controller drives movement
             return cv;
         }
 

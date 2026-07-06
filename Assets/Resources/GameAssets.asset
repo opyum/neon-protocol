@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e7f6b6c027bafe4586c69d8c99eb45e, type: 3}
   m_Name: GameAssets
   m_EditorClassIdentifier: Assembly-CSharp::FirstGame.Core.GameAssets
-  enemyCharacterPrefab: {fileID: 3371209851704607221, guid: ee97cb0d42863da48a7823104da8c6e7, type: 3}
+  enemyCharacterPrefab: {fileID: 2942890349100817004, guid: d38bfb20df98e5540945e71a10d7f8b5, type: 3}
   playerCharacterPrefab: {fileID: 0}
   characterScale: {x: 1, y: 1, z: 1}
   weaponViewmodels:
