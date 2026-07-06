@@ -68,10 +68,24 @@ namespace FirstGame.Core
             r.abilities.body = cc;
             r.abilities.hitMask = Physics.DefaultRaycastLayers;
 
-            // Viewmodel (teal block, lower-right of view)
-            var vm = Prim.Box(camGo.transform, new Vector3(0.35f, -0.28f, 0.6f), new Vector3(0.12f, 0.12f, 0.5f),
+            // Viewmodel: real weapon model if assigned, else a teal block
+            var ga = GameAssets.Instance;
+            var wpnPrefab = ga != null ? ga.WeaponFor(r.weapon.weapon.id) : null;
+            GameObject vm;
+            if (wpnPrefab != null)
+            {
+                vm = ModelUtil.Spawn(wpnPrefab, camGo.transform, 0.5f, byHeight: false,
+                                     ArtPalette.MakeMaterial(ArtPalette.Metal, 0.7f, 0.6f));
+                vm.transform.localPosition = new Vector3(0.24f, -0.22f, 0.42f);
+                vm.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                vm.name = "Viewmodel";
+            }
+            else
+            {
+                vm = Prim.Box(camGo.transform, new Vector3(0.35f, -0.28f, 0.6f), new Vector3(0.12f, 0.12f, 0.5f),
                               ArtPalette.Player, collider: false, name: "Viewmodel");
-            vm.layer = IgnoreRaycast;
+            }
+            ModelUtil.SetLayerRecursive(vm, IgnoreRaycast);
 
             // Juice
             var feel = player.AddComponent<GameFeel>();

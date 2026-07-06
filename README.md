@@ -87,11 +87,11 @@ git clone https://github.com/opyum/neon-protocol.git
 - **Direction artistique "NEON PROTOCOL"** appliquée : palette béton froid + néons cyan/magenta,
   ennemis rouges, objectifs ambre — voir `Documentation/DIRECTION_ARTISTIQUE.md`.
 
-> ⚠️ **Choix d'honnêteté technique** : l'art est **100 % procédural** (formes primitives +
-> matériaux couleur unie), car des textures/modèles ne peuvent pas être générés ici comme des
-> fichiers binaires. Le rendu utilise **URP 17.5 + Bloom** (migration appliquée et vérifiée en
-> compilation). ⚠️ **À la première ouverture, rends-toi une fois dans chaque scène pour valider le
-> rendu à l'œil** (pas de matériaux roses, bloom visible sur les néons) — voir `Documentation/URP_MIGRATION.md`.
+> **Assets** : le décor est procédural (primitives), mais les **personnages** (ennemis/mannequins) et
+> les **armes** utilisent désormais de **vrais modèles 3D** (packs **Kenney**, CC0, inclus dans le dépôt).
+> Voir `Documentation/ASSETS_IMPORT.md` (dont comment ajouter des animations Mixamo). Rendu en
+> **URP 17.5 + Bloom**. ⚠️ **À la première ouverture, passe une fois dans chaque scène pour valider le
+> rendu à l'œil** (pas de matériaux roses, bloom sur les néons) — voir `Documentation/URP_MIGRATION.md`.
 
 ---
 

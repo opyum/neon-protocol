@@ -43,6 +43,7 @@ namespace FirstGame.Enemies
         Transform _eye;
         LayerMask _mask;
         AudioSource _audio;
+        CharacterVisual _visual;
         float _nextFire;
         float _armedAt;
         bool _aggro;
@@ -104,6 +105,17 @@ namespace FirstGame.Enemies
             _eye = new GameObject("Eye").transform;
             _eye.SetParent(transform, false);
             _eye.localPosition = new Vector3(0, 1.6f, 0);
+
+            // Real character model if available (keep the primitive colliders for hit detection).
+            var ga = GameAssets.Instance;
+            if (ga != null && ga.enemyCharacterPrefab != null)
+            {
+                Destroy(body.GetComponent<MeshRenderer>());
+                Destroy(head.GetComponent<MeshRenderer>());
+                Destroy(gun);
+                _bodyRenderer = null;
+                _visual = CharacterVisual.Attach(transform, ga.enemyCharacterPrefab, 1.8f * scale, ArtPalette.Enemy);
+            }
         }
 
         void Start()
@@ -147,6 +159,8 @@ namespace FirstGame.Enemies
                     Fire(dist);
             }
 
+            if (_visual != null) _visual.SetSpeed(_aggro && move.sqrMagnitude > 0.01f ? 1f : 0f);
+
             _vy = _cc.isGrounded ? -1f : _vy - 20f * Time.deltaTime;
             _cc.Move((move.normalized * _cfg.moveSpeed + Vector3.up * _vy) * Time.deltaTime);
         }
@@ -161,6 +175,7 @@ namespace FirstGame.Enemies
         void Fire(float dist)
         {
             _nextFire = Time.time + _cfg.fireInterval;
+            _visual?.Shoot();
             Tracer(Eye, AimPoint);
             if (_audio && ProceduralAudio.Shot) _audio.PlayOneShot(ProceduralAudio.Shot, 0.4f);
             float p = _cfg.accuracy * Mathf.Clamp01(1.25f - dist / _cfg.aggroRange);
@@ -213,6 +228,7 @@ namespace FirstGame.Enemies
 
         void Die()
         {
+            _visual?.Die();
             OnDied?.Invoke(this);
             if (autoRespawn) { SetVisible(false); StartCoroutine(Respawn()); }
             else gameObject.SetActive(false);

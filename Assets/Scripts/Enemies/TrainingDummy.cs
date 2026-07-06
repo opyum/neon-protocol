@@ -79,6 +79,16 @@ namespace FirstGame.Enemies
             _hitColor = ArtPalette.Signal;
             _spawn = transform.position;
             _health = maxHealth;
+
+            // Real character model if available (keep colliders for hit/headshot detection).
+            var ga = FirstGame.Core.GameAssets.Instance;
+            if (ga != null && ga.enemyCharacterPrefab != null)
+            {
+                Destroy(body.GetComponent<MeshRenderer>());
+                Destroy(head.GetComponent<MeshRenderer>());
+                _renderers.Clear();
+                FirstGame.Core.CharacterVisual.Attach(transform, ga.enemyCharacterPrefab, 1.9f, ArtPalette.Enemy);
+            }
         }
 
         void Update()
