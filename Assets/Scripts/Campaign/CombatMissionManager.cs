@@ -42,6 +42,31 @@ namespace FirstGame.Campaign
 
         public void StartMission(int index)
         {
+            BeginWithBuy("Équipe-toi avant la mission.", () => StartMissionInternal(index));
+        }
+
+        // ---------- Buy phase ----------
+        void BeginWithBuy(string label, System.Action start)
+        {
+            var go = new GameObject("[BuyMenu]");
+            var buy = go.AddComponent<BuyMenuUI>();
+            buy.Show(Economy.StartBudget, label, (weaponId, armorId, credits) =>
+            {
+                ApplyPurchase(weaponId, armorId);
+                start();
+            });
+        }
+
+        void ApplyPurchase(string weaponId, string armorId)
+        {
+            var w = WeaponCatalog.ById(weaponId);
+            if (w != null && weapon != null) weapon.SwitchWeapon(w);
+            float shield = Economy.ArmorShield(armorId);
+            if (shield > 0f && health != null) health.AddShield(shield);
+        }
+
+        void StartMissionInternal(int index)
+        {
             _over = false; _deaths = 0;
             BuildMiniHud();
             health.OnDied += OnPlayerDied;
@@ -60,6 +85,11 @@ namespace FirstGame.Campaign
 
         // ---------- Ranked (ELO vs bots) ----------
         public void StartRanked()
+        {
+            BeginWithBuy("Classé — équipe-toi pour le duel.", StartRankedInternal);
+        }
+
+        void StartRankedInternal()
         {
             _over = false; _deaths = 0; _ranked = true;
             BuildMiniHud();
