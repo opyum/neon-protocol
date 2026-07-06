@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using FirstGame.Core;
 using FirstGame.Combat;
+using FirstGame.Enemies;
 using FirstGame.Progression;
 
 namespace FirstGame.Abilities
@@ -137,14 +139,110 @@ namespace FirstGame.Abilities
                     break;
 
                 case AbilityEffect.Knockback:
-                    // Placeholder pulse; a real knockback needs enemy rigidbodies (phase 2).
-                    Burst(transform.position + transform.forward * 2f, a.color);
+                    DoKnockback(slot, a);
                     break;
 
-                default: // Wall / Smoke / Zone — drop a temporary marker volume in front of the player
+                case AbilityEffect.Wall:
+                    SpawnWall(a);
+                    break;
+
+                case AbilityEffect.Smoke:
+                    SpawnSmoke(a);
+                    break;
+
+                case AbilityEffect.Zone:
+                    SpawnZone(slot, a);
+                    break;
+
+                default:
                     SpawnPlaceholderVolume(a);
                     break;
             }
+        }
+
+        Vector3 AimedGroundPoint(float maxDist, Vector3 fallback)
+        {
+            var cam = aimCamera != null ? aimCamera : Camera.main;
+            if (cam != null && Physics.Raycast(new Ray(cam.transform.position, cam.transform.forward),
+                    out var hit, maxDist, hitMask, QueryTriggerInteraction.Ignore))
+                return hit.point;
+            return fallback;
+        }
+
+        // Ice wall: solid, opaque slab that blocks bullets AND movement (keep the collider).
+        void SpawnWall(AbilityData a)
+        {
+            var cam = aimCamera != null ? aimCamera : Camera.main;
+            Vector3 fwd = cam != null ? cam.transform.forward : transform.forward;
+            fwd.y = 0; fwd.Normalize();
+            Vector3 basePos = AimedGroundPoint(20f, transform.position + fwd * 4f);
+
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube); // keep BoxCollider (blocks bullets + bodies)
+            go.name = "IceWall_" + a.id;
+            go.transform.position = basePos + Vector3.up * 1.5f;
+            go.transform.rotation = Quaternion.LookRotation(Vector3.Cross(Vector3.up, fwd));
+            go.transform.localScale = new Vector3(4f, 3f, 0.3f);
+            var c = a.color; c.a = 1f;
+            go.GetComponent<Renderer>().sharedMaterial = ArtPalette.MakeMaterial(c, 0f, 0.6f);
+            Destroy(go, 8f);
+        }
+
+        // Shadow smoke: opaque sphere that only blocks vision (no collider).
+        void SpawnSmoke(AbilityData a)
+        {
+            Vector3 center = AimedGroundPoint(20f, transform.position + transform.forward * 8f) + Vector3.up * 1f;
+            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            var col = go.GetComponent<Collider>(); if (col) Destroy(col);
+            go.name = "ShadowSmoke_" + a.id;
+            go.transform.position = center;
+            go.transform.localScale = Vector3.one * 5f;
+            var c = a.color; c.a = 1f;
+            var r = go.GetComponent<Renderer>();
+            r.sharedMaterial = ArtPalette.MakeUnlit(c);
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            Destroy(go, 12f);
+        }
+
+        // Toxic zone: trigger DoT volume that damages IDamageables inside (not the caster).
+        void SpawnZone(int slot, AbilityData a)
+        {
+            Vector3 center = AimedGroundPoint(20f, transform.position + transform.forward * 4f);
+            var root = new GameObject("ToxicZone_" + a.id);
+            root.transform.position = center;
+            var z = root.AddComponent<ToxicZone>();
+            z.radius = 3f; z.dps = a.damage * _powerMul; z.tick = 0.5f; z.life = 6f;
+            z.self = playerHealth;
+            z.onHit = d => OnAbilityHit?.Invoke(slot, a, d);
+            Prim.Cylinder(root.transform, Vector3.up * 0.3f, 3f, 0.6f, a.color, unlit: true, name: "ZoneFx");
+        }
+
+        // Wind blast: push enemies within a forward cone.
+        void DoKnockback(int slot, AbilityData a)
+        {
+            Vector3 origin = transform.position;
+            Vector3 fwd = transform.forward; fwd.y = 0; fwd.Normalize();
+            var seenD = new HashSet<TrainingDummy>();
+            var seenB = new HashSet<EnemyBot>();
+            foreach (var col in Physics.OverlapSphere(origin, 8f, hitMask, QueryTriggerInteraction.Collide))
+            {
+                Vector3 to = col.transform.position - origin; to.y = 0;
+                if (to.sqrMagnitude < 0.01f || Vector3.Angle(fwd, to.normalized) > 30f) continue;
+
+                var dm = col.GetComponentInParent<TrainingDummy>();
+                if (dm != null && dm.IsAlive && seenD.Add(dm))
+                {
+                    dm.Knockback(to.normalized, 5f, 0.25f);
+                    OnAbilityHit?.Invoke(slot, a, dm);
+                    continue;
+                }
+                var bot = col.GetComponentInParent<EnemyBot>();
+                if (bot != null && bot.IsAlive && seenB.Add(bot))
+                {
+                    bot.Knockback(to.normalized, 5f, 0.25f);
+                    OnAbilityHit?.Invoke(slot, a, bot);
+                }
+            }
+            Burst(origin + fwd * 2f, a.color);
         }
 
         void Burst(Vector3 pos, Color color)

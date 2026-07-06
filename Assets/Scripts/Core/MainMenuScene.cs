@@ -13,7 +13,7 @@ namespace FirstGame.Core
             // Camera
             var camGo = new GameObject("MenuCamera");
             var cam = camGo.AddComponent<Camera>();
-            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.clearFlags = CameraClearFlags.Skybox;
             cam.backgroundColor = ArtPalette.Sky;
             cam.fieldOfView = 52f;
             camGo.AddComponent<AudioListener>();

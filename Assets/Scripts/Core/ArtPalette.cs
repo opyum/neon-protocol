@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace FirstGame.Core
 {
@@ -39,29 +40,34 @@ namespace FirstGame.Core
 
         public static readonly Color SunColor = Hex("#C8D4FF"); // cold directional light
 
-        static Shader _standard;
-        static Shader Standard => _standard != null ? _standard : (_standard = Shader.Find("Standard"));
+        static readonly Color[] Accents = { NeonCyan, Objective, Enemy, NeonMag, Player };
+        public static Color AccentFor(int i) => Accents[((i % Accents.Length) + Accents.Length) % Accents.Length];
+
+        // Pipeline-aware shader selection (URP-ready; uses Built-in shaders while URP is off).
+        static bool Urp => GraphicsSettings.currentRenderPipeline != null;
+        static Shader _lit, _unlit;
+        static Shader Lit => _lit != null ? _lit : (_lit = Shader.Find(Urp ? "Universal Render Pipeline/Lit" : "Standard"));
+        static Shader UnlitShader => _unlit != null ? _unlit : (_unlit = Shader.Find(Urp ? "Universal Render Pipeline/Unlit" : "Unlit/Color"));
 
         public static Material MakeMaterial(Color color, float metallic = 0f, float smoothness = 0.15f)
         {
-            var m = new Material(Standard) { color = color };
+            var m = new Material(Lit) { color = color }; // _Color/_BaseColor are both [MainColor]
             m.SetFloat("_Metallic", metallic);
-            m.SetFloat("_Glossiness", smoothness);
+            m.SetFloat(Urp ? "_Smoothness" : "_Glossiness", smoothness);
             return m;
         }
 
         /// <summary>Bright, always-lit colour (used for neon strips, tracers, ability FX).</summary>
         public static Material MakeUnlit(Color color)
         {
-            var shader = Shader.Find("Unlit/Color");
-            if (shader == null) return MakeMaterial(color);
-            return new Material(shader) { color = color };
+            if (UnlitShader == null) return MakeMaterial(color);
+            return new Material(UnlitShader) { color = color };
         }
 
         /// <summary>Emissive Standard material (soft glow so units never vanish in shadow).</summary>
         public static Material MakeEmissive(Color color, float intensity = 1.5f)
         {
-            var m = new Material(Standard) { color = color * 0.25f };
+            var m = new Material(Lit) { color = color * 0.25f };
             m.EnableKeyword("_EMISSION");
             m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
             m.SetColor("_EmissionColor", color * intensity);
@@ -71,7 +77,7 @@ namespace FirstGame.Core
         /// <summary>Additive, transparent "bloom-fake" material for glow halos around neon.</summary>
         public static Material MakeGlow(Color color, float intensity = 2f)
         {
-            var m = new Material(Standard);
+            var m = new Material(Lit);
             var c = color; c.a = 0.2f;
             m.SetFloat("_Mode", 3f); // Transparent
             m.SetOverrideTag("RenderType", "Transparent");

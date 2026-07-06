@@ -2,6 +2,7 @@ using UnityEngine;
 using FirstGame.Player;
 using FirstGame.Combat;
 using FirstGame.Abilities;
+using FirstGame.Equipment;
 using FirstGame.Progression;
 
 namespace FirstGame.Core
@@ -45,7 +46,7 @@ namespace FirstGame.Core
             var camGo = new GameObject("PlayerCamera");
             camGo.transform.SetParent(pivot.transform, false);
             r.camera = camGo.AddComponent<Camera>();
-            r.camera.clearFlags = CameraClearFlags.SolidColor;
+            r.camera.clearFlags = CameraClearFlags.Skybox;
             r.camera.backgroundColor = ArtPalette.Sky;
             r.camera.fieldOfView = 90f;
             r.camera.nearClipPlane = 0.05f;
@@ -77,6 +78,12 @@ namespace FirstGame.Core
             feel.abilities = r.abilities;
             feel.health = r.health;
             feel.shake = r.shake;
+            feel.controller = r.controller;
+
+            // Equipment: passive armour applied at spawn + consumable utility on key G
+            EquipmentEffects.ApplyArmor(EquipmentCatalog.ById(PlayerProfile.Current.equipmentId), r);
+            var util = player.AddComponent<UtilityController>();
+            util.Init(EquipmentCatalog.ById(PlayerProfile.Current.utilityId), r);
 
             return r;
         }

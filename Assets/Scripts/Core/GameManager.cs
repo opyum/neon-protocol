@@ -23,6 +23,8 @@ namespace FirstGame.Core
             Instance = go.AddComponent<GameManager>();
             DontDestroyOnLoad(go);
 
+            new GameObject("[Music]").AddComponent<MusicPlayer>();
+
             SceneManager.sceneLoaded += Instance.OnSceneLoaded;
             Instance.BuildForScene(SceneManager.GetActiveScene().name);
         }
@@ -38,6 +40,9 @@ namespace FirstGame.Core
                     break;
                 case SceneNames.PracticeRange:
                     PracticeRangeScene.Build();
+                    break;
+                case SceneNames.CombatArena:
+                    CombatArenaScene.Build();
                     break;
                 case SceneNames.MainMenu:
                 default:

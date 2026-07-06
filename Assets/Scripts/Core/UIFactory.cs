@@ -88,7 +88,12 @@ namespace FirstGame.Core
             colors.fadeDuration = 0.08f;
             btn.colors = colors;
             btn.targetGraphic = img;
-            if (onClick != null) btn.onClick.AddListener(() => onClick());
+            btn.onClick.AddListener(() => { UiAudio.I.Click(); onClick?.Invoke(); });
+
+            var trigger = rt.gameObject.AddComponent<EventTrigger>();
+            var enter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            enter.callback.AddListener(_ => UiAudio.I.Hover());
+            trigger.triggers.Add(enter);
 
             var txt = Label(rt, label, fontSize, fg);
             Stretch(txt.rectTransform, 4);

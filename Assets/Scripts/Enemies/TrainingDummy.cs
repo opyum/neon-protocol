@@ -154,5 +154,25 @@ namespace FirstGame.Enemies
             SetVisible(true);
             SetColor(_baseColor);
         }
+
+        /// <summary>Pushes the dummy (moves its patrol centre too, so the shove sticks).</summary>
+        public void Knockback(Vector3 dir, float distance, float duration)
+        {
+            StartCoroutine(KnockCo(dir.normalized * distance, duration));
+        }
+
+        IEnumerator KnockCo(Vector3 delta, float dur)
+        {
+            Vector3 start = _spawn, end = _spawn + delta;
+            float t = 0f;
+            while (t < dur)
+            {
+                t += Time.deltaTime;
+                _spawn = Vector3.Lerp(start, end, Mathf.SmoothStep(0f, 1f, t / dur));
+                if (!_patrol) transform.position = _spawn;
+                yield return null;
+            }
+            _spawn = end;
+        }
     }
 }

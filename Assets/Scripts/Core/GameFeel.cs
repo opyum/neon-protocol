@@ -12,9 +12,12 @@ namespace FirstGame.Core
         public AbilitySystem abilities;
         public PlayerHealth health;
         public CameraShake shake;
+        public FirstPersonController controller;
 
         AudioSource _src;
         float _lastHealth = -1f;
+        float _stepAccum;
+        bool _wasGrounded;
 
         void Start()
         {
@@ -32,6 +35,31 @@ namespace FirstGame.Core
                 abilities.OnAbilityUsed += (s, a) => Play(ProceduralAudio.Ability, 0.7f);
             if (health != null)
                 health.OnHealthChanged += OnHealth;
+        }
+
+        void Update()
+        {
+            if (controller == null) return;
+            bool grounded = controller.IsGrounded;
+            float speed = controller.CurrentSpeed;
+            if (grounded && speed > 0.5f)
+            {
+                _stepAccum += speed * Time.deltaTime;
+                float stride = Input.GetKey(KeyCode.LeftShift) ? 2.0f : 2.3f;
+                if (_stepAccum >= stride) { _stepAccum = 0f; PlayStep(); }
+            }
+            else _stepAccum = 0f;
+
+            if (grounded && !_wasGrounded) PlayStep(0.55f); // landing
+            _wasGrounded = grounded;
+        }
+
+        void PlayStep(float volume = 0.35f)
+        {
+            if (_src == null || ProceduralAudio.Footstep == null) return;
+            _src.pitch = UnityEngine.Random.Range(0.9f, 1.1f);
+            _src.PlayOneShot(ProceduralAudio.Footstep, volume);
+            _src.pitch = 1f;
         }
 
         void OnFired()

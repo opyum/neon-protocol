@@ -27,6 +27,7 @@ namespace FirstGame.Player
         float _speedMul = 1f;
 
         public bool ControlEnabled = true;
+        public float equipSpeedMul = 1f; // set by equipment (armour)
         public bool IsGrounded => _cc != null && _cc.isGrounded;
         public float CurrentSpeed { get; private set; }
 
@@ -73,7 +74,7 @@ namespace FirstGame.Player
             Vector3 dir = transform.right * x + transform.forward * z;
             if (dir.sqrMagnitude > 1f) dir.Normalize();
 
-            float speed = baseMoveSpeed * _speedMul;
+            float speed = baseMoveSpeed * _speedMul * equipSpeedMul;
             if (Input.GetKey(KeyCode.LeftShift)) speed *= sprintMultiplier;
 
             Vector3 horizontal = dir * speed;

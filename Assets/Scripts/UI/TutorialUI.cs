@@ -96,5 +96,36 @@ namespace FirstGame.UI
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
+
+        /// <summary>Generic end-of-mission overlay (win or fail).</summary>
+        public void ShowResult(string titleText, string subtitle, string info, Color titleColor,
+                               string replayLabel, Action onReplay, Action onMenu)
+        {
+            _completePanel.SetActive(true);
+            var t = _completePanel.transform;
+
+            var title = UIFactory.Label(t, titleText, 52, titleColor, TextAnchor.MiddleCenter, FontStyle.Bold);
+            UIFactory.Place(title.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 180), new Vector2(1300, 70));
+
+            var sub = UIFactory.Label(t, subtitle, 30, ArtPalette.UiText, TextAnchor.MiddleCenter);
+            UIFactory.Place(sub.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 100), new Vector2(1200, 44));
+
+            if (!string.IsNullOrEmpty(info))
+            {
+                var inf = UIFactory.Label(t, info, 20, ArtPalette.UiDim, TextAnchor.MiddleCenter);
+                UIFactory.Place(inf.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 30), new Vector2(1000, 70));
+            }
+
+            var replay = UIFactory.AddChild(t, "Replay");
+            UIFactory.Place(replay, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-170, -90), new Vector2(300, 64));
+            UIFactory.Button(replay, replayLabel, ArtPalette.Cover, ArtPalette.UiText, onReplay);
+
+            var menu = UIFactory.AddChild(t, "Menu");
+            UIFactory.Place(menu, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(170, -90), new Vector2(300, 64));
+            UIFactory.Button(menu, "MENU PRINCIPAL", ArtPalette.NeonCyan, ArtPalette.UiInk, onMenu);
+
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
     }
 }

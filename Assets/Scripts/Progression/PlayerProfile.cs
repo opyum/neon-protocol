@@ -24,6 +24,8 @@ namespace FirstGame.Progression
         public string ability0 = "trait_de_feu";
         public string ability1 = "decharge_foudre";
         public string ability2 = "bouclier_de_lumiere";
+        public string equipmentId = "equip_armure_legere"; // armour slot
+        public string utilityId = "equip_fumigene";        // utility slot (key G)
 
         // Invested stat points (see GDD)
         public int vitalite = 0;      // +6 HP / pt
@@ -101,6 +103,8 @@ namespace FirstGame.Progression
         }
 
         public void SetWeapon(string id) { weaponId = id; Save(); }
+        public void SetEquipment(string id) { equipmentId = id; Save(); }
+        public void SetUtility(string id) { utilityId = id; Save(); }
 
         /// <summary>Refund every invested point (free respec between matches).</summary>
         public void Respec()

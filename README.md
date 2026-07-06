@@ -52,6 +52,7 @@ git clone https://github.com/opyum/neon-protocol.git
 | Tirer | **Clic gauche** |
 | Recharger | **R** |
 | Sorts | **E**, **F**, **C** |
+| Utilitaire (fumigène / flash / drone) | **G** |
 | Changer d'arme (stand de tir) | **1** à **5** |
 | Retour au menu | **Échap** |
 
@@ -59,18 +60,23 @@ git clone https://github.com/opyum/neon-protocol.git
 
 ## 📦 Ce qui est construit
 
-- **Menu d'introduction** : titre, fond 3D animé, puce de niveau/palier, et 5 entrées
-  **toutes fonctionnelles** : Campagne, Entraînement libre, Arsenal, Personnage & Stats, Quitter.
-- **Arsenal** : choisis ton **arme parmi 5** et tes **3 sorts parmi les 10** (boutons E/F/C).
-  Le choix est sauvegardé et utilisé en jeu.
-- **Écran Personnage** : montée de niveau, distribution des **6 stats** (Vitalité, Célérité,
-  Contrôle, Focalisation, Amplification, Régénération), respec gratuit, aperçu des sorts équipés.
-- **Mode Campagne (tutoriel jouable en 8 étapes)** : regarder, se déplacer, sauter, tirer,
-  recharger, lancer un sort, éliminer 3 mannequins fixes, puis 2 mannequins mobiles.
-- **Stand de tir (Entraînement libre)** : ton loadout, changement d'arme aux touches 1-5,
-  rangées de **cibles qui réapparaissent** + cibles mobiles, pour régler ta visée.
-- **Game feel** : **sons synthétisés par code** (tir, rechargement, impact, sort) et
-  **tremblement de caméra** au tir et quand tu subis des dégâts.
+- **Menu d'introduction** : titre à halo néon, fond 3D animé (grille Tron + formes flottantes),
+  ciel en dégradé, puce de niveau/palier, et 6 entrées **toutes fonctionnelles**.
+- **Arsenal** : choisis ton **arme parmi 5**, tes **3 sorts parmi les 10** (E/F/C), et ton
+  **équipement** (armure passive + utilitaire touche G). Sauvegardé et utilisé en jeu.
+- **Écran Personnage** : montée de niveau, distribution des **6 stats**, respec gratuit.
+- **Mode Campagne (tutoriel jouable en 8 étapes)** : déplacement, visée, saut, tir, rechargement,
+  sorts, mannequins fixes puis mobiles.
+- **Missions de combat** : arène avec **bots qui ripostent** (4 paliers de difficulté). 3 missions —
+  **Le Duel** (4 manches 1v1), **Le Round** (capture de zone), **Examen** (4 vagues + chef d'élite),
+  avec système de vies et écran victoire/défaite.
+- **Stand de tir (Entraînement libre)** : loadout complet, armes aux touches 1-5, cibles qui réapparaissent.
+- **Sorts complets** : Mur de glace (bloque balles+déplacement), Voile d'ombre (coupe la vue),
+  Nuage toxique (dégâts/s), Rafale de vent (repousse les ennemis), plus dégâts/dash/soin/bouclier.
+- **Équipement** : armures (bouclier + vitesse, régén), et utilitaires — fumigène, grenade
+  aveuglante (flash plein écran), drone de reconnaissance.
+- **Game feel** : **musique synthwave + SFX + sons de pas** générés par code, **tremblement de caméra**,
+  et **skybox en dégradé** + éclairage stylisé (lumière de contour, brouillard de profondeur).
 - **Systèmes de jeu réels** :
   - Contrôleur FPS (CharacterController) — AZERTY/QWERTY.
   - Tir hitscan avec **headshot ×2** (viser la sphère blanche), munitions, rechargement, traceur.

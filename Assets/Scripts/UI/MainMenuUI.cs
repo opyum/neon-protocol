@@ -5,6 +5,7 @@ using FirstGame.Core;
 using FirstGame.Progression;
 using FirstGame.Abilities;
 using FirstGame.Combat;
+using FirstGame.Equipment;
 
 namespace FirstGame.UI
 {
@@ -20,6 +21,10 @@ namespace FirstGame.UI
         readonly List<(string id, Image img)> _weaponButtons = new();
         readonly Text[] _equipNames = new Text[3];
         readonly Image[] _equipSwatches = new Image[3];
+
+        GameObject _equipmentPanel;
+        readonly List<(string id, Image img)> _armorButtons = new();
+        readonly List<(string id, Image img)> _utilButtons = new();
 
         static readonly (string id, string name, string effect)[] Stats =
         {
@@ -69,8 +74,9 @@ namespace FirstGame.UI
             (string title, string sub, Color accent)[] items =
             {
                 ("CAMPAGNE",           "Tutoriel jouable — apprends les bases", ArtPalette.NeonCyan),
+                ("MISSIONS DE COMBAT", "Duel, Round, Examen — contre des bots",  ArtPalette.Enemy),
                 ("ENTRAÎNEMENT LIBRE", "Stand de tir : règle ta visée",         ArtPalette.NeonCyan),
-                ("ARSENAL",            "Choisis ton arme et tes 3 sorts",       ArtPalette.Objective),
+                ("ARSENAL",            "Arme, 3 sorts et équipement",           ArtPalette.Objective),
                 ("PERSONNAGE",         "Niveaux & points de statistiques",      ArtPalette.Player),
                 ("QUITTER",            "Fermer le jeu",                          ArtPalette.Enemy),
             };
@@ -98,6 +104,7 @@ namespace FirstGame.UI
 
             BuildCharacterPanel(root);
             BuildLoadoutPanel(root);
+            BuildEquipmentPanel(root);
         }
 
         void OnMenu(int index)
@@ -105,10 +112,11 @@ namespace FirstGame.UI
             switch (index)
             {
                 case 0: GameManager.LoadScene(SceneNames.Tutorial); break;
-                case 1: GameManager.LoadScene(SceneNames.PracticeRange); break;
-                case 2: _loadoutPanel.SetActive(true); RefreshLoadout(); break;
-                case 3: _characterPanel.SetActive(true); RefreshCharacter(); break;
-                case 4: Quit(); break;
+                case 1: GameManager.LoadScene(SceneNames.CombatArena); break;
+                case 2: GameManager.LoadScene(SceneNames.PracticeRange); break;
+                case 3: _loadoutPanel.SetActive(true); RefreshLoadout(); break;
+                case 4: _characterPanel.SetActive(true); RefreshCharacter(); break;
+                case 5: Quit(); break;
                 default: break;
             }
         }
@@ -314,11 +322,83 @@ namespace FirstGame.UI
                 }
             }
 
+            var toEquip = UIFactory.AddChild(t, "ToEquip");
+            UIFactory.Place(toEquip, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(320, 60));
+            UIFactory.Button(toEquip, "ÉQUIPEMENT ▶", ArtPalette.Objective, ArtPalette.UiInk,
+                () => { _loadoutPanel.SetActive(false); _equipmentPanel.SetActive(true); RefreshEquipment(); }, 22);
+
             var close = UIFactory.AddChild(t, "CloseLoadout");
             UIFactory.Place(close, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-90, 50), new Vector2(240, 60));
             UIFactory.Button(close, "RETOUR", ArtPalette.NeonCyan, ArtPalette.UiInk, () => _loadoutPanel.SetActive(false), 26);
 
             _loadoutPanel.SetActive(false);
+        }
+
+        void BuildEquipmentPanel(Transform root)
+        {
+            _equipmentPanel = UIFactory.AddChild(root, "EquipmentPanel").gameObject;
+            UIFactory.Stretch((RectTransform)_equipmentPanel.transform);
+            _equipmentPanel.AddComponent<Image>().color = new Color(ArtPalette.Sky.r, ArtPalette.Sky.g, ArtPalette.Sky.b, 0.96f);
+            var t = _equipmentPanel.transform;
+
+            var head = UIFactory.Label(t, "ÉQUIPEMENT", 44, ArtPalette.Objective, TextAnchor.UpperLeft, FontStyle.Bold);
+            UIFactory.Place(head.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(90, -70), new Vector2(900, 54));
+
+            BuildEquipSection(t, "ARMURE (passive)", EquipmentCatalog.BySlot("armure"), -140, _armorButtons,
+                id => { PlayerProfile.Current.SetEquipment(id); RefreshEquipment(); });
+            BuildEquipSection(t, "UTILITAIRE (touche G)", EquipmentCatalog.BySlot("utilitaire"), -420, _utilButtons,
+                id => { PlayerProfile.Current.SetUtility(id); RefreshEquipment(); });
+
+            var toSpells = UIFactory.AddChild(t, "ToSpells");
+            UIFactory.Place(toSpells, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(320, 60));
+            UIFactory.Button(toSpells, "◀ ARME & SORTS", ArtPalette.Cover, ArtPalette.UiText,
+                () => { _equipmentPanel.SetActive(false); _loadoutPanel.SetActive(true); RefreshLoadout(); }, 22);
+
+            var close = UIFactory.AddChild(t, "CloseEquip");
+            UIFactory.Place(close, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-90, 50), new Vector2(240, 60));
+            UIFactory.Button(close, "RETOUR", ArtPalette.NeonCyan, ArtPalette.UiInk, () => _equipmentPanel.SetActive(false), 26);
+
+            _equipmentPanel.SetActive(false);
+        }
+
+        void BuildEquipSection(Transform t, string title, List<EquipmentData> items, float y,
+                               List<(string id, Image img)> store, System.Action<string> onEquip)
+        {
+            var label = UIFactory.Label(t, title, 26, ArtPalette.UiText, TextAnchor.UpperLeft, FontStyle.Bold);
+            UIFactory.Place(label.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(92, y), new Vector2(700, 32));
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                var e = items[i];
+                var card = UIFactory.AddChild(t, "Eq_" + e.id);
+                UIFactory.Place(card, new Vector2(0, 1), new Vector2(0, 1), new Vector2(92 + i * 470, y - 44), new Vector2(450, 210));
+                var bg = card.gameObject.AddComponent<Image>();
+                bg.color = ArtPalette.UiInk;
+                store.Add((e.id, bg));
+
+                var sw = UIFactory.AddChild(card, "Sw");
+                UIFactory.Place(sw, new Vector2(0, 1), new Vector2(0, 1), new Vector2(16, -16), new Vector2(40, 40));
+                sw.gameObject.AddComponent<Image>().color = e.color;
+
+                var nm = UIFactory.Label(card, e.nameFr, 24, ArtPalette.UiText, TextAnchor.UpperLeft, FontStyle.Bold);
+                UIFactory.Place(nm.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(66, -18), new Vector2(370, 32));
+                var eff = UIFactory.Label(card, e.effectFr, 17, ArtPalette.UiDim, TextAnchor.UpperLeft);
+                UIFactory.Place(eff.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(18, -70), new Vector2(414, 80));
+
+                string id = e.id;
+                var btn = UIFactory.AddChild(card, "Equip");
+                UIFactory.Place(btn, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 18), new Vector2(200, 50));
+                UIFactory.Button(btn, "ÉQUIPER", ArtPalette.NeonCyan, ArtPalette.UiInk, () => onEquip(id), 22);
+            }
+        }
+
+        void RefreshEquipment()
+        {
+            var p = PlayerProfile.Current;
+            foreach (var (id, img) in _armorButtons)
+                if (img != null) img.color = id == p.equipmentId ? new Color(0.10f, 0.34f, 0.40f, 1f) : ArtPalette.UiInk;
+            foreach (var (id, img) in _utilButtons)
+                if (img != null) img.color = id == p.utilityId ? new Color(0.10f, 0.34f, 0.40f, 1f) : ArtPalette.UiInk;
         }
 
         void RefreshLoadout()
