@@ -74,10 +74,10 @@ namespace FirstGame.Core
             GameObject vm;
             if (wpnPrefab != null)
             {
-                vm = ModelUtil.Spawn(wpnPrefab, camGo.transform, 0.5f, byHeight: false,
+                vm = ModelUtil.Spawn(wpnPrefab, camGo.transform, 0.26f, byHeight: false,
                                      ArtPalette.MakeMaterial(ArtPalette.Metal, 0.7f, 0.6f));
-                vm.transform.localPosition = new Vector3(0.24f, -0.22f, 0.42f);
-                vm.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                vm.transform.localPosition = new Vector3(0.16f, -0.18f, 0.45f);
+                vm.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);
                 vm.name = "Viewmodel";
             }
             else

@@ -66,7 +66,7 @@ namespace FirstGame.Campaign
                 ui.ShowStep(i + 1, 4, $"DUEL — Manche {i + 1}/4 : élimine l'adversaire.", "Vise la tête (x2 dégâts). Utilise le couvert entre deux tirs.");
                 health.Heal(999f);
                 bool dead = false;
-                var bot = SpawnBot(new Vector3(0, 0, 30), tiers[i]);
+                var bot = SpawnBot(new Vector3(0, 0, 0), tiers[i]);
                 bot.OnDied += _ => dead = true;
                 UpdateEnemies();
                 while (!dead && !_over) yield return null;
