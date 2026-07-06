@@ -1,10 +1,28 @@
-# Migration URP + Bloom (guide)
+# Migration URP + Bloom
 
-> **Statut : préparé, pas activé.** Le projet tourne en **Built-in Render Pipeline** (fiable, vérifié).
-> Le code est **prêt pour URP** (`ArtPalette` choisit déjà le bon shader selon le pipeline actif).
-> Passer réellement en URP demande une **validation visuelle dans l'éditeur** — impossible à vérifier
-> en compilation seule (une erreur URP se voit à l'écran : matériaux roses, pas de bloom). Fais-le
-> quand tu peux ouvrir chaque scène et regarder.
+> **Statut : APPLIQUÉE ✅ (compilation + configuration vérifiées).** Le projet est passé en **URP 17.5.0**
+> (fourni avec Unity 6.1, aucun téléchargement). Le paquet, l'asset de pipeline (`Assets/Settings/PC_RPAsset`
+> + `PC_Renderer`, HDR activé), l'assignation à *Graphics* + aux **6 niveaux de qualité**, le **Bloom**
+> (Volume global dans `Env`), le post-process caméra, et les shaders/émissifs HDR sont tous en place et
+> **compilent sans erreur** (vérifié en batch sur une copie isolée).
+>
+> **Il reste UNE chose que je ne peux pas faire à ta place : la validation VISUELLE.** Rouvre le projet
+> et regarde chaque scène. Cherche : (a) des matériaux **roses** (shader non résolu), (b) le **bloom** sur
+> les néons. Si tout est correct, c'est bon. Réglages fins (intensité du bloom, exposition) = à l'œil.
+>
+> ### ⚠️ Important — rouvre le projet
+> Comme ton éditeur était ouvert pendant la migration, **ferme et rouvre le projet** dans Unity : au
+> chargement, Unity résout URP et applique le pipeline. La première ouverture importe les shaders URP
+> (peut prendre 1-2 min).
+>
+> ### Si un matériau apparaît rose
+> Menu **NEON ▸ Configurer URP** (script `Assets/Editor/UrpSetup.cs`) — il (re)crée et (ré)assigne le
+> pipeline à Graphics + tous les niveaux de qualité. Puis vérifie *Project Settings → Quality* : chaque
+> niveau doit avoir le *Render Pipeline Asset* = `PC_RPAsset`.
+
+---
+
+## Détail de ce qui a été fait (référence)
 
 ## Pourquoi
 Le Built-in RP n'a pas de bloom natif ; les néons sont approximés par des halos additifs

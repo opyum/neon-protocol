@@ -67,6 +67,8 @@ namespace FirstGame.Core
             }
 
             DynamicGI.UpdateEnvironment();
+
+            PostFx.SetupBloom(); // no-op under Built-in
         }
     }
 }

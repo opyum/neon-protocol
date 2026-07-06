@@ -61,7 +61,9 @@ namespace FirstGame.Core
         public static Material MakeUnlit(Color color)
         {
             if (UnlitShader == null) return MakeMaterial(color);
-            return new Material(UnlitShader) { color = color };
+            var m = new Material(UnlitShader);
+            m.color = Urp ? color * 2.5f : color; // HDR under URP so neon crosses the bloom threshold
+            return m;
         }
 
         /// <summary>Emissive Standard material (soft glow so units never vanish in shadow).</summary>
@@ -70,7 +72,7 @@ namespace FirstGame.Core
             var m = new Material(Lit) { color = color * 0.25f };
             m.EnableKeyword("_EMISSION");
             m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-            m.SetColor("_EmissionColor", color * intensity);
+            m.SetColor("_EmissionColor", color * (Urp ? intensity * 2f : intensity));
             return m;
         }
 
@@ -79,6 +81,21 @@ namespace FirstGame.Core
         {
             var m = new Material(Lit);
             var c = color; c.a = 0.2f;
+            if (Urp)
+            {
+                m.SetFloat("_Surface", 1f);  // Transparent
+                m.SetFloat("_Blend", 1f);    // Additive
+                m.SetFloat("_SrcBlend", (int)BlendMode.One);
+                m.SetFloat("_DstBlend", (int)BlendMode.One);
+                m.SetFloat("_ZWrite", 0f);
+                m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                m.EnableKeyword("_EMISSION");
+                m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+                m.SetColor("_EmissionColor", color * (intensity * 2f));
+                m.color = c;
+                m.renderQueue = 3000;
+                return m;
+            }
             m.SetFloat("_Mode", 3f); // Transparent
             m.SetOverrideTag("RenderType", "Transparent");
             m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);

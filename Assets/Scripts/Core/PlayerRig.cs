@@ -53,6 +53,7 @@ namespace FirstGame.Core
             camGo.AddComponent<AudioListener>();
             camGo.tag = "MainCamera";
             r.shake = camGo.AddComponent<CameraShake>();
+            PostFx.EnablePostProcessing(r.camera);
 
             r.health = player.AddComponent<PlayerHealth>();
 

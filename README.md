@@ -89,9 +89,9 @@ git clone https://github.com/opyum/neon-protocol.git
 
 > ⚠️ **Choix d'honnêteté technique** : l'art est **100 % procédural** (formes primitives +
 > matériaux couleur unie), car des textures/modèles ne peuvent pas être générés ici comme des
-> fichiers binaires. Le rendu utilise le **Built-in Render Pipeline** pour une fiabilité maximale
-> à l'ouverture. Le passage à **URP + Bloom** (recommandé par la DA pour les vrais néons) est la
-> première évolution visuelle — voir la roadmap.
+> fichiers binaires. Le rendu utilise **URP 17.5 + Bloom** (migration appliquée et vérifiée en
+> compilation). ⚠️ **À la première ouverture, rends-toi une fois dans chaque scène pour valider le
+> rendu à l'œil** (pas de matériaux roses, bloom visible sur les néons) — voir `Documentation/URP_MIGRATION.md`.
 
 ---
 

@@ -18,6 +18,7 @@ namespace FirstGame.Core
             cam.fieldOfView = 52f;
             camGo.AddComponent<AudioListener>();
             camGo.tag = "MainCamera";
+            PostFx.EnablePostProcessing(cam);
             camGo.transform.position = new Vector3(4.5f, 2.4f, -8.5f);
             camGo.transform.rotation = Quaternion.Euler(7f, -20f, 0f);
 
