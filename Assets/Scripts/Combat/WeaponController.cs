@@ -26,6 +26,7 @@ namespace FirstGame.Combat
         public event Action<int, int> OnAmmoChanged;       // (ammo, magazine)
         public event Action<IDamageable, float, bool> OnHit; // (target, damage, wasHeadshot)
         public event Action OnWeaponChanged;
+        public event Action<bool> OnKill;                    // (wasHeadshot) a shot killed the target
 
         void Awake()
         {
@@ -109,6 +110,7 @@ namespace FirstGame.Combat
                     float damage = weapon.damage * (headshot ? weapon.headshotMultiplier : 1f);
                     float dealt = target.TakeDamage(damage, hit.point, hit.normal);
                     OnHit?.Invoke(target, dealt, headshot);
+                    if (!target.IsAlive) OnKill?.Invoke(headshot);
                 }
             }
 

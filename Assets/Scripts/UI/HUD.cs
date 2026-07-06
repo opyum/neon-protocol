@@ -18,9 +18,11 @@ namespace FirstGame.UI
         Image _healthFill, _shieldFill;
         Text _healthText, _ammoText, _weaponName;
         Image _hitmarker;
+        Text _killPopup;
         Image _damageVignette;
         float _flashAlpha;
         float _lastHp = -1f;
+        Coroutine _hitmarkerCo, _killCo;
         readonly Image[] _abilityFills = new Image[3];
         readonly Text[] _abilityCharges = new Text[3];
 
@@ -42,6 +44,7 @@ namespace FirstGame.UI
             {
                 weapon.OnAmmoChanged += OnAmmo;
                 weapon.OnHit += OnWeaponHit;
+                weapon.OnKill += OnKill;
                 weapon.OnWeaponChanged += OnWeaponChanged;
                 OnAmmo(weapon.Ammo, weapon.weapon.magazineSize);
                 OnWeaponChanged();
@@ -51,7 +54,7 @@ namespace FirstGame.UI
         void OnDestroy()
         {
             if (playerHealth != null) { playerHealth.OnHealthChanged -= OnHealth; playerHealth.OnShieldChanged -= OnShield; }
-            if (weapon != null) { weapon.OnAmmoChanged -= OnAmmo; weapon.OnHit -= OnWeaponHit; weapon.OnWeaponChanged -= OnWeaponChanged; }
+            if (weapon != null) { weapon.OnAmmoChanged -= OnAmmo; weapon.OnHit -= OnWeaponHit; weapon.OnKill -= OnKill; weapon.OnWeaponChanged -= OnWeaponChanged; }
         }
 
         void OnWeaponChanged()
@@ -107,6 +110,11 @@ namespace FirstGame.UI
             UIFactory.Place(hm, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(18, 18));
             _hitmarker = hm.gameObject.AddComponent<Image>();
             _hitmarker.color = new Color(1, 1, 1, 0);
+
+            // Kill confirmation popup (hidden until a kill)
+            _killPopup = UIFactory.Label(root, "", 46, ArtPalette.Enemy, TextAnchor.MiddleCenter, FontStyle.Bold);
+            UIFactory.Place(_killPopup.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 130), new Vector2(760, 70));
+            var kc = _killPopup.color; kc.a = 0f; _killPopup.color = kc;
 
             // Health / shield block (bottom-left, large & readable)
             var block = UIFactory.AddChild(root, "HealthBlock");
@@ -222,8 +230,30 @@ namespace FirstGame.UI
 
         void OnWeaponHit(IDamageable target, float dmg, bool headshot)
         {
-            StopAllCoroutines();
-            StartCoroutine(HitmarkerRoutine(headshot));
+            if (_hitmarkerCo != null) StopCoroutine(_hitmarkerCo);
+            _hitmarkerCo = StartCoroutine(HitmarkerRoutine(headshot));
+        }
+
+        void OnKill(bool headshot)
+        {
+            if (_killPopup == null) return;
+            _killPopup.text = headshot ? "ÉLIMINÉ — TÊTE !" : "ÉLIMINÉ !";
+            _killPopup.color = headshot ? ArtPalette.Objective : ArtPalette.Enemy;
+            if (_killCo != null) StopCoroutine(_killCo);
+            _killCo = StartCoroutine(KillPopupRoutine());
+        }
+
+        IEnumerator KillPopupRoutine()
+        {
+            float t = 0f;
+            while (t < 1.1f)
+            {
+                t += Time.deltaTime;
+                float a = t < 0.15f ? 1f : Mathf.Lerp(1f, 0f, (t - 0.15f) / 0.95f);
+                var c = _killPopup.color; c.a = a; _killPopup.color = c;
+                yield return null;
+            }
+            var c2 = _killPopup.color; c2.a = 0f; _killPopup.color = c2;
         }
 
         IEnumerator HitmarkerRoutine(bool headshot)

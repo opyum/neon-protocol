@@ -9,7 +9,7 @@ namespace FirstGame.Core
     {
         const int Freq = 44100;
 
-        static AudioClip _shot, _reload, _hit, _hitHead, _ability, _click, _ping, _step, _hover, _music;
+        static AudioClip _shot, _reload, _hit, _hitHead, _ability, _click, _ping, _step, _hover, _music, _kill;
 
         public static AudioClip Shot     => _shot     ??= BuildShot();
         public static AudioClip Reload   => _reload   ??= BuildReload();
@@ -21,6 +21,7 @@ namespace FirstGame.Core
         public static AudioClip Footstep => _step     ??= BuildStep();
         public static AudioClip Hover    => _hover    ??= BuildBlip(1650f, 0.03f, 0.12f);
         public static AudioClip MusicLoop => _music   ??= BuildMusic();
+        public static AudioClip Kill     => _kill     ??= BuildKill();
 
         static AudioClip FromSamples(string name, float[] s)
         {
@@ -76,6 +77,21 @@ namespace FirstGame.Core
                 s[i] = Mathf.Sin(2f * Mathf.PI * hz * t) * env * amp;
             }
             return FromSamples("sfx_blip", s);
+        }
+
+        // Two ascending tones = satisfying "kill confirmed".
+        static AudioClip BuildKill()
+        {
+            int n = (int)(Freq * 0.2f);
+            var s = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                float t = (float)i / Freq;
+                float env = Mathf.Exp(-t * 9f);
+                float hz = t < 0.06f ? 720f : 1080f;
+                s[i] = (Mathf.Sin(2f * Mathf.PI * hz * t) + 0.3f * Mathf.Sin(2f * Mathf.PI * hz * 2f * t)) * env * 0.4f;
+            }
+            return FromSamples("sfx_kill", s);
         }
 
         static AudioClip BuildStep()

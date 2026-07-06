@@ -231,7 +231,15 @@ namespace FirstGame.Enemies
             _visual?.Die();
             OnDied?.Invoke(this);
             if (autoRespawn) { SetVisible(false); StartCoroutine(Respawn()); }
-            else gameObject.SetActive(false);
+            else StartCoroutine(DieDelayed());
+        }
+
+        IEnumerator DieDelayed()
+        {
+            // No longer a threat / not hittable, but keep the body so the death animation plays.
+            foreach (var c in GetComponentsInChildren<Collider>()) if (c) c.enabled = false;
+            yield return new WaitForSeconds(2.2f);
+            gameObject.SetActive(false);
         }
 
         IEnumerator Respawn()

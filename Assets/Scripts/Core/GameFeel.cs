@@ -30,6 +30,7 @@ namespace FirstGame.Core
                 weapon.OnFired += OnFired;
                 weapon.OnReloadStart += () => Play(ProceduralAudio.Reload, 0.7f);
                 weapon.OnHit += (t, d, head) => Play(head ? ProceduralAudio.HitHead : ProceduralAudio.Hit, 0.8f);
+                weapon.OnKill += head => { Play(ProceduralAudio.Kill, 0.85f); if (shake != null) shake.Add(0.2f); };
             }
             if (abilities != null)
                 abilities.OnAbilityUsed += (s, a) => Play(ProceduralAudio.Ability, 0.7f);
