@@ -21,6 +21,17 @@ namespace FirstGame.Core
 
         public static string ArenaName => ArenaNames[ArenaLayout];
 
+        // ---------- Procedural map (10 seeded labyrinth layouts) ----------
+        public const int MapCount = 10;
+
+        public static int MapIndex
+        {
+            get => Mathf.Clamp(PlayerPrefs.GetInt("match.map", 0), 0, MapCount - 1);
+            set { PlayerPrefs.SetInt("match.map", ((value % MapCount) + MapCount) % MapCount); PlayerPrefs.Save(); }
+        }
+
+        public static string MapName => $"CARTE {MapIndex + 1} / {MapCount}";
+
         // ---------- Difficulty (remembered preference) ----------
         public static readonly string[] DifficultyNames = { "FACILE", "NORMAL", "DIFFICILE", "CAUCHEMAR" };
 

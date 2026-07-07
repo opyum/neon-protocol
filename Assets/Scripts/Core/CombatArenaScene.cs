@@ -82,10 +82,12 @@ namespace FirstGame.Core
             var sub = UIFactory.Label(root, "Choisis ta mission. Ton loadout (arme, 3 sorts, équipement) s'applique.", 22, ArtPalette.UiDim, TextAnchor.UpperCenter);
             UIFactory.Place(sub.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -134), new Vector2(1200, 30));
 
-            // Selector row: arena layout (rebuilds the cover) + bot difficulty (saved preference).
-            MakeCycle(root, new Vector2(-200, 300), "ARÈNE : ", () => MatchConfig.ArenaName,
+            // Selector row: procedural map (rebuilds), arena style, and bot difficulty.
+            MakeCycle(root, new Vector2(-430, 300), "CARTE : ", () => MatchConfig.MapName,
+                () => { MatchConfig.MapIndex += 1; SetArenaLayout(MatchConfig.ArenaLayout); });
+            MakeCycle(root, new Vector2(0, 300), "STYLE : ", () => MatchConfig.ArenaName,
                 () => SetArenaLayout((MatchConfig.ArenaLayout + 1) % MatchConfig.ArenaNames.Length));
-            MakeCycle(root, new Vector2(200, 300), "DIFFICULTÉ : ", () => MatchConfig.DifficultyName,
+            MakeCycle(root, new Vector2(430, 300), "DIFFICULTÉ : ", () => MatchConfig.DifficultyName,
                 () => MatchConfig.Difficulty = (MatchConfig.Difficulty + 1) % MatchConfig.DifficultyNames.Length);
 
             (string t, string d, System.Action play)[] missions =
@@ -166,14 +168,8 @@ namespace FirstGame.Core
             SetMat(Prim.Box(arena, new Vector3(35f, 2, 10f), new Vector3(0.5f, 4, 70), ArtPalette.Wall, name: "Wall_E"), wallMat);
             SetMat(Prim.Box(arena, new Vector3(-35f, 2, 10f), new Vector3(0.5f, 4, 70), ArtPalette.Wall, name: "Wall_W"), wallMat);
 
-            // Cover: real modular props (Prototype Kit) if available, else primitive boxes
-            if (!LevelBuilder.BuildCombatCover(arena))
-            {
-                Vector3[] covers = { new(-8, 0, 0), new(8, 0, 0), new(-5, 0, 12), new(5, 0, 12), new(-14, 0, 20), new(14, 0, 20) };
-                foreach (var c in covers)
-                    Prim.Box(arena, c + new Vector3(0, 0.75f, 0), new Vector3(2, 1.5f, 2), ArtPalette.Cover, name: "Cover");
-                Prim.Box(arena, new Vector3(0, 1f, 24), new Vector3(6, 2f, 1.5f), ArtPalette.Cover, name: "Cover_Big");
-            }
+            // Interior: procedural labyrinth (seeded by the selected map — 10 layouts).
+            MapGen.Build(arena, MatchConfig.MapIndex);
 
             // Control zone marker (amber disc + pulse)
             var disc = Prim.Cylinder(arena, new Vector3(0, 0.06f, 18), 4f, 0.12f, ArtPalette.Objective, unlit: true, name: "ControlZone");
