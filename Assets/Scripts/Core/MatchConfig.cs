@@ -21,14 +21,20 @@ namespace FirstGame.Core
 
         public static string ArenaName => ArenaNames[ArenaLayout];
 
-        // ---------- Procedural map (10 seeded labyrinth layouts) ----------
+        // ---------- Procedural maps (10 seeded labyrinth layouts PER game mode) ----------
         public const int MapCount = 10;
+
+        /// <summary>Selected game mode (0-based, matches the picker order). Drives a distinct map set.</summary>
+        public static int ModeId = 0;
 
         public static int MapIndex
         {
             get => Mathf.Clamp(PlayerPrefs.GetInt("match.map", 0), 0, MapCount - 1);
             set { PlayerPrefs.SetInt("match.map", ((value % MapCount) + MapCount) % MapCount); PlayerPrefs.Save(); }
         }
+
+        /// <summary>Seed unique per (mode, map) so every mode has its own 10 distinct maps.</summary>
+        public static int MapSeed => ModeId * 101 + MapIndex + 1;
 
         public static string MapName => $"CARTE {MapIndex + 1} / {MapCount}";
 

@@ -23,7 +23,7 @@ namespace FirstGame.Core
             for (int gx = 1; gx < Cells; gx++)
                 for (int gz = 0; gz < Cells; gz++)
                 {
-                    if (rng.NextDouble() > 0.34) continue;
+                    if (rng.NextDouble() > 0.30) continue;
                     float x = -half + gx * Cell;
                     float z = CenterZ - half + (gz + 0.5f) * Cell;
                     if (Clear(x, z)) continue;
@@ -34,7 +34,7 @@ namespace FirstGame.Core
             for (int gz = 1; gz < Cells; gz++)
                 for (int gx = 0; gx < Cells; gx++)
                 {
-                    if (rng.NextDouble() > 0.34) continue;
+                    if (rng.NextDouble() > 0.30) continue;
                     float z = CenterZ - half + gz * Cell;
                     float x = -half + (gx + 0.5f) * Cell;
                     if (Clear(x, z)) continue;
@@ -63,12 +63,13 @@ namespace FirstGame.Core
             }
         }
 
-        // Keep the objective (~z 18), player spawn (~z -18) and mid clear.
+        // Keep the objective, spawns and a central corridor clear so a path always exists.
         static bool Clear(float x, float z)
         {
             if (new Vector2(x, z - 18f).sqrMagnitude < 49f) return true;   // objective zone
             if (new Vector2(x, z + 18f).sqrMagnitude < 36f) return true;   // player spawn
-            if (Mathf.Abs(x) < 3f && Mathf.Abs(z - 10f) < 3f) return true;  // dead centre
+            if (Mathf.Abs(x) < 3.5f) return true;                          // central N-S corridor (guaranteed path)
+            if (Mathf.Abs(z - 10f) < 3.5f) return true;                    // central E-W corridor
             return false;
         }
 

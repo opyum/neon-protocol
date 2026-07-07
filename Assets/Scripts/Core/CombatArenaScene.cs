@@ -119,10 +119,13 @@ namespace FirstGame.Core
                 var desc = UIFactory.Label(card, missions[i].d, 15, ArtPalette.UiDim, TextAnchor.UpperLeft);
                 UIFactory.Place(desc.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(28, -46), new Vector2(440, 44));
 
+                int modeId = i;
                 var play = UIFactory.AddChild(card, "Play");
                 UIFactory.Place(play, new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-16, 0), new Vector2(120, 52));
                 UIFactory.Button(play, "JOUER", ArtPalette.NeonCyan, ArtPalette.UiInk, () =>
                 {
+                    MatchConfig.ModeId = modeId;          // pick this mode's map set
+                    SetArenaLayout(MatchConfig.ArenaLayout); // rebuild the arena for the mode's map
                     canvas.gameObject.SetActive(false);
                     act();
                 }, 22);
@@ -168,8 +171,8 @@ namespace FirstGame.Core
             SetMat(Prim.Box(arena, new Vector3(35f, 2, 10f), new Vector3(0.5f, 4, 70), ArtPalette.Wall, name: "Wall_E"), wallMat);
             SetMat(Prim.Box(arena, new Vector3(-35f, 2, 10f), new Vector3(0.5f, 4, 70), ArtPalette.Wall, name: "Wall_W"), wallMat);
 
-            // Interior: procedural labyrinth (seeded by the selected map — 10 layouts).
-            MapGen.Build(arena, MatchConfig.MapIndex);
+            // Interior: procedural labyrinth (seeded per mode + map — 10 maps per game mode).
+            MapGen.Build(arena, MatchConfig.MapSeed);
 
             // Control zone marker (amber disc + pulse)
             var disc = Prim.Cylinder(arena, new Vector3(0, 0.06f, 18), 4f, 0.12f, ArtPalette.Objective, unlit: true, name: "ControlZone");
