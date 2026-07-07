@@ -114,17 +114,15 @@ namespace FirstGame.Progression
         public void SetEquipment(string id) { equipmentId = id; Save(); }
         public void SetUtility(string id) { utilityId = id; Save(); }
 
-        /// <summary>Pick an agent — copies its 3 fixed abilities into the loadout slots.</summary>
-        public void SetAgent(string id)
+        /// <summary>Pick a class/character — gives its passive only. Spells are chosen freely
+        /// (SetAbility), so the character no longer locks the 3 abilities.</summary>
+        public void SetAgent(string id) { agentId = id; Save(); }
+
+        /// <summary>Fill the 3 spell slots from an agent's suggested loadout (a preset button).</summary>
+        public void ApplyAgentPreset(string id)
         {
-            agentId = id;
             var a = FirstGame.Agents.AgentCatalog.ById(id);
-            if (a != null)
-            {
-                SetAbilityRaw(0, a.abilityIds[0]);
-                SetAbilityRaw(1, a.abilityIds[1]);
-                SetAbilityRaw(2, a.abilityIds[2]);
-            }
+            if (a != null) { SetAbilityRaw(0, a.abilityIds[0]); SetAbilityRaw(1, a.abilityIds[1]); SetAbilityRaw(2, a.abilityIds[2]); }
             Save();
         }
 

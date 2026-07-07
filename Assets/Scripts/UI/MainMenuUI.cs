@@ -31,6 +31,7 @@ namespace FirstGame.UI
         readonly List<(string id, Image border)> _agentCards = new();
 
         GameObject _optionsPanel;
+        GameObject _playPanel, _buildPanel;
 
         static readonly (string id, string name, string effect)[] Stats =
         {
@@ -76,23 +77,18 @@ namespace FirstGame.UI
             var sub = UIFactory.Label(root, "FPS TACTIQUE  •  ENTRAÎNEMENT & CAMPAGNE", 26, ArtPalette.NeonCyan, TextAnchor.UpperLeft);
             UIFactory.Place(sub.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(96, -268), new Vector2(1000, 34));
 
-            // --- Menu buttons (large, single-line, with subtitle) ---
+            // --- Top-level menu (categories → sub-menus, keeps the home screen light) ---
             (string title, string sub, Color accent)[] items =
             {
-                ("CAMPAGNE",           "Tutoriel jouable — apprends les bases", ArtPalette.NeonCyan),
-                ("MISSIONS DE COMBAT", "Duel, Round, Examen, Classé — vs bots",  ArtPalette.Enemy),
-                ("ENTRAÎNEMENT LIBRE", "Stand de tir : règle ta visée",         ArtPalette.NeonCyan),
-                ("AGENTS",             "Choisis ton agent et ses 3 sorts",      ArtPalette.NeonMag),
-                ("ARSENAL",            "Arme et équipement",                    ArtPalette.Objective),
-                ("PERSONNAGE",         "Niveaux & points de statistiques",      ArtPalette.Player),
-                ("MULTIJOUEUR",        "1v1 en réseau local (bêta)",            ArtPalette.NeonMag),
-                ("OPTIONS",            "Sensibilité, touches, plein écran…",     ArtPalette.NeonCyan),
-                ("QUITTER",            "Fermer le jeu",                          ArtPalette.Enemy),
+                ("JOUER",     "Campagne · Missions · Entraînement · Multijoueur", ArtPalette.NeonCyan),
+                ("MON BUILD", "Sorts · Armes · Classe · Personnage",             ArtPalette.Objective),
+                ("OPTIONS",   "Sensibilité, touches, plein écran…",              ArtPalette.NeonMag),
+                ("QUITTER",   "Fermer le jeu",                                   ArtPalette.Enemy),
             };
             for (int i = 0; i < items.Length; i++)
             {
                 int idx = i;
-                MenuButton(root, -300 - i * 84, items[i].accent, items[i].title, items[i].sub, () => OnMenu(idx));
+                MenuButton(root, -360 - i * 104, items[i].accent, items[i].title, items[i].sub, () => OnMenu(idx));
             }
 
             // --- Level chip (top-right) ---
@@ -120,21 +116,55 @@ namespace FirstGame.UI
             var op = OptionsPanel.Create(root, () => _optionsPanel.SetActive(false), null);
             _optionsPanel = op.gameObject;
             _optionsPanel.SetActive(false);
+
+            BuildSubmenus(root);
+        }
+
+        void BuildSubmenus(Transform root)
+        {
+            _playPanel = BuildSubmenu(root, "PlayPanel", "JOUER", new (string, string, Color, System.Action)[]
+            {
+                ("CAMPAGNE",           "Tutoriel jouable — apprends les bases", ArtPalette.NeonCyan, () => GameManager.LoadScene(SceneNames.Tutorial)),
+                ("MISSIONS DE COMBAT", "Duel, Round, Examen, Classé — vs bots",  ArtPalette.Enemy,    () => GameManager.LoadScene(SceneNames.CombatArena)),
+                ("ENTRAÎNEMENT LIBRE", "Stand de tir : règle ta visée",          ArtPalette.NeonCyan, () => GameManager.LoadScene(SceneNames.PracticeRange)),
+                ("MULTIJOUEUR",        "1v1 en réseau local (bêta)",             ArtPalette.NeonMag,  () => { FirstGame.Net.NetSession.Pending = true; GameManager.LoadScene(SceneNames.CombatArena); }),
+            });
+
+            _buildPanel = BuildSubmenu(root, "BuildPanel", "MON BUILD", new (string, string, Color, System.Action)[]
+            {
+                ("SORTS & ARMES", "Choisis tes 3 sorts et tes armes",  ArtPalette.Objective, () => { _loadoutPanel.SetActive(true); RefreshLoadout(); }),
+                ("CLASSE",        "Choisis ta classe et sa passive",   ArtPalette.NeonMag,   () => { _agentsPanel.SetActive(true); RefreshAgents(); }),
+                ("PERSONNAGE",    "Niveaux & points de statistiques",  ArtPalette.Player,    () => { _characterPanel.SetActive(true); RefreshCharacter(); }),
+            });
+        }
+
+        GameObject BuildSubmenu(Transform root, string name, string title, (string t, string sub, Color accent, System.Action act)[] entries)
+        {
+            var panel = UIFactory.AddChild(root, name).gameObject;
+            UIFactory.Stretch((RectTransform)panel.transform);
+            panel.AddComponent<Image>().color = new Color(ArtPalette.Sky.r, ArtPalette.Sky.g, ArtPalette.Sky.b, 0.9f);
+            var t = panel.transform;
+
+            var head = UIFactory.Label(t, title, 60, ArtPalette.NeonCyan, TextAnchor.UpperLeft, FontStyle.Bold);
+            UIFactory.Place(head.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(96, -130), new Vector2(1000, 70));
+            for (int i = 0; i < entries.Length; i++)
+                MenuButton(t, -250 - i * 104, entries[i].accent, entries[i].t, entries[i].sub, entries[i].act);
+
+            var back = UIFactory.AddChild(t, "Back");
+            UIFactory.Place(back, Vector2.zero, Vector2.zero, new Vector2(96, 60), new Vector2(300, 62));
+            UIFactory.Button(back, "◀ RETOUR", ArtPalette.Cover, ArtPalette.UiText, () => panel.SetActive(false), 22);
+            panel.SetActive(false);
+            return panel;
         }
 
         void OnMenu(int index)
         {
             switch (index)
             {
-                case 0: GameManager.LoadScene(SceneNames.Tutorial); break;
-                case 1: GameManager.LoadScene(SceneNames.CombatArena); break;
-                case 2: GameManager.LoadScene(SceneNames.PracticeRange); break;
-                case 3: _agentsPanel.SetActive(true); RefreshAgents(); break;
-                case 4: _loadoutPanel.SetActive(true); RefreshLoadout(); break;
-                case 5: _characterPanel.SetActive(true); RefreshCharacter(); break;
-                case 6: FirstGame.Net.NetSession.Pending = true; GameManager.LoadScene(SceneNames.CombatArena); break;
-                case 7: _optionsPanel.SetActive(true); break;
-                case 8: Quit(); break;
+                case 0: _playPanel.SetActive(true); break;
+                case 1: _buildPanel.SetActive(true); break;
+                case 2: _optionsPanel.SetActive(true); break;
+                case 3: Quit(); break;
                 default: break;
             }
         }

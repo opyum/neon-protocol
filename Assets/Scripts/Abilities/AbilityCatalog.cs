@@ -52,19 +52,10 @@ namespace FirstGame.Abilities
 
         public static AbilityData ById(string id) => All.Find(a => a.id == id);
 
-        /// <summary>Resolve the player's 3-ability loadout: the chosen agent defines the 3 spells;
-        /// falls back to the saved slots, then defaults.</summary>
+        /// <summary>Resolve the player's 3 freely-chosen spells (falls back to defaults).</summary>
         public static AbilityData[] ResolveLoadout(PlayerProfile p)
         {
             var def = DefaultLoadout;
-            var ag = FirstGame.Agents.AgentCatalog.ById(p.agentId);
-            if (ag != null && ag.abilityIds != null && ag.abilityIds.Length == 3)
-                return new[]
-                {
-                    ById(ag.abilityIds[0]) ?? def[0],
-                    ById(ag.abilityIds[1]) ?? def[1],
-                    ById(ag.abilityIds[2]) ?? def[2],
-                };
             return new[]
             {
                 ById(p.GetAbility(0)) ?? def[0],
