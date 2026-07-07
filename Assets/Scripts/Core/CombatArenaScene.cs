@@ -90,36 +90,40 @@ namespace FirstGame.Core
 
             (string t, string d, System.Action play)[] missions =
             {
-                ("LE DUEL", "4 duels 1v1 de difficulté croissante. 1 vie. +150 XP.", () => mgr.StartMission(0)),
-                ("LE ROUND", "Capture et sécurise la zone contre 4 défenseurs. 2 vies. +250 XP.", () => mgr.StartMission(1)),
-                ("EXAMEN", "4 vagues d'assaut jusqu'au chef d'élite. 3 vies. +400 XP (bonus sans mort).", () => mgr.StartMission(2)),
-                ("CLASSÉ", "Duel 1v1 classé contre un bot à ton niveau. Gagne/perds de l'ELO.", () => mgr.StartRanked()),
-                ("SPIKE — POSE / DÉSAMORÇAGE", "Arme la charge sur le site et défends-la jusqu'à détonation. 2 vies. +300 XP.", () => mgr.StartSpike()),
+                ("LE DUEL", "4 duels 1v1 croissants. 1 vie.", () => mgr.StartMission(0)),
+                ("LE ROUND", "Capture la zone contre 4 défenseurs.", () => mgr.StartMission(1)),
+                ("EXAMEN", "4 vagues jusqu'au chef d'élite.", () => mgr.StartMission(2)),
+                ("CLASSÉ", "Duel 1v1 classé (ELO).", () => mgr.StartRanked()),
+                ("SPIKE — POSE/DÉSAMORÇAGE", "Arme la charge et défends-la.", () => mgr.StartSpike()),
+                ("MATCH À MORT (TDM)", "20 éliminations, réapparitions.", () => mgr.StartTDM()),
+                ("CHACUN POUR SOI (FFA)", "Mêlée générale — 25 kills.", () => mgr.StartFFA()),
+                ("CAPTURE — ATTAQUE", "Prends la zone tenue par les défenseurs.", () => mgr.StartCaptureAttack()),
+                ("CAPTURE — DÉFENSE", "Défends la zone 90s contre les assauts.", () => mgr.StartCaptureDefense()),
             };
             for (int i = 0; i < missions.Length; i++)
             {
                 var act = missions[i].play;
+                int col = i % 2, row = i / 2;
                 var card = UIFactory.AddChild(root, "Mission_" + i);
-                UIFactory.Place(card, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 210 - i * 112), new Vector2(820, 100));
+                UIFactory.Place(card, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(col == 0 ? -318 : 318, 210 - row * 114), new Vector2(612, 100));
                 UIFactory.Panel(card, new Color(ArtPalette.UiInk.r, ArtPalette.UiInk.g, ArtPalette.UiInk.b, 0.85f));
 
                 var accent = UIFactory.AddChild(card, "Accent");
                 UIFactory.Place(accent, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(4, 0), new Vector2(8, 84));
-                Color accentColor = i == 3 ? ArtPalette.Objective : (i == 4 ? ArtPalette.Danger : ArtPalette.AccentFor(i));
-                accent.gameObject.AddComponent<Image>().color = accentColor;
+                accent.gameObject.AddComponent<Image>().color = ArtPalette.AccentFor(i);
 
-                var name = UIFactory.Label(card, missions[i].t, 30, ArtPalette.UiText, TextAnchor.UpperLeft, FontStyle.Bold);
-                UIFactory.Place(name.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(30, -12), new Vector2(560, 36));
-                var desc = UIFactory.Label(card, missions[i].d, 18, ArtPalette.UiDim, TextAnchor.UpperLeft);
-                UIFactory.Place(desc.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(32, -50), new Vector2(600, 44));
+                var name = UIFactory.Label(card, missions[i].t, 24, ArtPalette.UiText, TextAnchor.UpperLeft, FontStyle.Bold);
+                UIFactory.Place(name.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(26, -12), new Vector2(430, 32));
+                var desc = UIFactory.Label(card, missions[i].d, 15, ArtPalette.UiDim, TextAnchor.UpperLeft);
+                UIFactory.Place(desc.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(28, -46), new Vector2(440, 44));
 
                 var play = UIFactory.AddChild(card, "Play");
-                UIFactory.Place(play, new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-20, 0), new Vector2(150, 56));
+                UIFactory.Place(play, new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-16, 0), new Vector2(120, 52));
                 UIFactory.Button(play, "JOUER", ArtPalette.NeonCyan, ArtPalette.UiInk, () =>
                 {
                     canvas.gameObject.SetActive(false);
                     act();
-                }, 24);
+                }, 22);
             }
 
             var back = UIFactory.AddChild(root, "Back");

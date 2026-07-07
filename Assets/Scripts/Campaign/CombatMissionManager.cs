@@ -29,6 +29,7 @@ namespace FirstGame.Campaign
         bool _over;
         bool _ranked;
         int _rankedOpp;
+        int _score;
 
         Text _livesLabel, _enemiesLabel, _captureLabel;
         Image _captureFill;
@@ -309,6 +310,96 @@ namespace FirstGame.Campaign
 
         void SetStateText(string s) { if (_captureLabel) _captureLabel.text = s; }
         void SetCaptureColor(Color c) { if (_captureFill) _captureFill.color = c; }
+
+        // ---------- Game modes (vs bots) ----------
+        public void StartTDM() => BeginWithLoadout(() => ModeSetup(4, RunTDM()));
+        public void StartFFA() => BeginWithLoadout(() => ModeSetup(5, RunFFA()));
+        public void StartCaptureAttack() => BeginWithLoadout(() => ModeSetup(3, RunRound()));
+        public void StartCaptureDefense() => BeginWithLoadout(() => ModeSetup(3, RunCaptureDefense()));
+
+        void ModeSetup(int lives, IEnumerator co)
+        {
+            _over = false; _deaths = 0; _ranked = false; _score = 0;
+            MatchConfig.ApplyDifficulty();
+            BuildMiniHud();
+            health.OnDied += OnPlayerDied;
+            SetControls(true);
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            _lives = lives;
+            UpdateLives();
+            StartCoroutine(co);
+        }
+
+        static BotTier RandTier() => (BotTier)UnityEngine.Random.Range(0, 4);
+
+        void SpawnScoringBot()
+        {
+            var b = SpawnBot(SpawnPoints[UnityEngine.Random.Range(0, SpawnPoints.Length)], RandTier());
+            b.OnDied += _ => _score++;
+        }
+
+        IEnumerator RunTDM()
+        {
+            const int target = 20, alive = 5;
+            ui.ShowStep(1, 1, $"MATCH À MORT — {target} éliminations.", "Ennemis en réapparition continue. Enchaîne les kills.");
+            for (int i = 0; i < alive; i++) SpawnScoringBot();
+            while (_score < target && !_over)
+            {
+                while (AliveCount() < alive && _score + AliveCount() < target) SpawnScoringBot();
+                if (_enemiesLabel) _enemiesLabel.text = $"ÉLIMINATIONS : {_score} / {target}";
+                yield return null;
+            }
+            if (!_over) Win(350, "MATCH À MORT REMPORTÉ");
+        }
+
+        IEnumerator RunFFA()
+        {
+            const int target = 25, alive = 8;
+            ui.ShowStep(1, 1, $"CHACUN POUR SOI — {target} éliminations.", "Mêlée générale : élimine tout ce qui bouge.");
+            for (int i = 0; i < alive; i++) SpawnScoringBot();
+            while (_score < target && !_over)
+            {
+                while (AliveCount() < alive && _score + AliveCount() < target) SpawnScoringBot();
+                if (_enemiesLabel) _enemiesLabel.text = $"ÉLIMINATIONS : {_score} / {target}";
+                yield return null;
+            }
+            if (!_over) Win(400, "FFA REMPORTÉ");
+        }
+
+        IEnumerator RunCaptureDefense()
+        {
+            ui.ShowStep(1, 1, "DÉFENSE — empêche la capture (90s).", "Tue les assaillants. S'ils tiennent la zone sans toi, tu perds.");
+            ShowCaptureBar(true);
+            StartCoroutine(DefenseWaves());
+            float enemyCap = 0f, timer = 90f;
+            while (timer > 0f && !_over)
+            {
+                int inZone = 0;
+                foreach (var b in _bots) if (b != null && b.IsAlive && Flat(b.transform.position, zoneCenter) < 5f) inZone++;
+                bool playerIn = Flat(controller.transform.position, zoneCenter) < 5f;
+                if (inZone > 0 && !playerIn) enemyCap += 12f * Time.deltaTime;
+                else enemyCap -= 6f * Time.deltaTime;
+                enemyCap = Mathf.Clamp(enemyCap, 0f, 100f);
+                UpdateCapture(enemyCap);
+                UpdateEnemies();
+                if (enemyCap >= 100f) { Lose(); yield break; }
+                timer -= Time.deltaTime;
+                if (_livesLabel) _livesLabel.text = $"DÉFENSE : {Mathf.CeilToInt(timer)}s";
+                yield return null;
+            }
+            if (!_over) Win(400, "ZONE DÉFENDUE");
+        }
+
+        IEnumerator DefenseWaves()
+        {
+            while (!_over)
+            {
+                if (AliveCount() < 6)
+                    SpawnBot(SpawnPoints[UnityEngine.Random.Range(0, SpawnPoints.Length)], RandTier());
+                yield return new WaitForSeconds(2.5f);
+            }
+        }
 
         // ---------- Helpers ----------
         EnemyBot SpawnBot(Vector3 pos, BotTier tier, float scale = 1f, string agentId = null)
