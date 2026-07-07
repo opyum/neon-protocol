@@ -51,9 +51,9 @@ namespace FirstGame.Combat
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.R)) BeginReload();
+            if (Keybinds.Pressed(GameAction.Reload)) BeginReload();
 
-            if (Input.GetMouseButton(0) && Time.time >= _nextFireTime && Ammo > 0)
+            if (Input.GetKey(Keybinds.Get(GameAction.Fire)) && Time.time >= _nextFireTime && Ammo > 0)
             {
                 Fire();
                 _nextFireTime = Time.time + 1f / Mathf.Max(0.05f, weapon.fireRate);

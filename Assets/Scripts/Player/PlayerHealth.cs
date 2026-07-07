@@ -77,6 +77,13 @@ namespace FirstGame.Player
             OnShieldChanged?.Invoke(Shield);
         }
 
+        /// <summary>Raise the out-of-combat regen rate to at least <paramref name="perSecond"/>
+        /// (never lowers the profile-derived value). Used by Rempart's passive (Garde: 8 PV/s).</summary>
+        public void EnsureRegenAtLeast(float perSecond)
+        {
+            _regenPerSecond = Mathf.Max(_regenPerSecond, perSecond);
+        }
+
         void Respawn()
         {
             Health = MaxHealth;

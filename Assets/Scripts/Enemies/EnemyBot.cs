@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using FirstGame.Abilities;
 using FirstGame.Combat;
 using FirstGame.Core;
 using FirstGame.Player;
@@ -31,6 +32,20 @@ namespace FirstGame.Enemies
         public bool autoRespawn = false;
         public float respawnDelay = 3f;
 
+        /// <summary>Optional: makes this bot an "ennemi-agent" that periodically casts a
+        /// non-hitscan spell (smoke/wall/zone) toward the player. Elite bots also trigger an ultimate.
+        /// Null/empty = plain hitscan bot.</summary>
+        public string agentId;
+        float _nextCast;
+        float _nextUlt;
+        const float CastInterval = 7f;
+
+        // Global difficulty modifiers (1 = default). Set by FirstGame.Core.MatchConfig before spawning.
+        public static float AccuracyScale = 1f;
+        public static float DamageScale = 1f;
+        public static float FireIntervalScale = 1f;
+        public static float ReactionScale = 1f;
+
         public event Action<EnemyBot> OnDied;
         public bool IsAlive => _health > 0f && gameObject.activeSelf;
 
@@ -52,7 +67,8 @@ namespace FirstGame.Enemies
 
         public static EnemyBot Spawn(Transform parent, Vector3 pos, BotTier tier,
                                      Transform target, PlayerHealth targetHealth,
-                                     bool autoRespawn = false, float scale = 1f, string name = "Bot")
+                                     bool autoRespawn = false, float scale = 1f, string name = "Bot",
+                                     string agentId = null)
         {
             var go = new GameObject(name);
             if (parent) go.transform.SetParent(parent, false);
@@ -62,6 +78,7 @@ namespace FirstGame.Enemies
             var bot = go.AddComponent<EnemyBot>();
             bot.tier = tier;
             bot.autoRespawn = autoRespawn;
+            bot.agentId = agentId;
             bot._target = target;
             bot._targetHealth = targetHealth;
             bot.BuildVisual(scale);
@@ -71,6 +88,10 @@ namespace FirstGame.Enemies
         void BuildVisual(float scale)
         {
             _cfg = TierCfg(tier);
+            _cfg.accuracy = Mathf.Clamp01(_cfg.accuracy * AccuracyScale);
+            _cfg.damage *= DamageScale;
+            _cfg.fireInterval = Mathf.Max(0.15f, _cfg.fireInterval * FireIntervalScale);
+            _cfg.reactionDelay = Mathf.Max(0f, _cfg.reactionDelay * ReactionScale);
             _health = _cfg.health;
             _cc = GetComponent<CharacterController>();
             _spawn = transform.position;
@@ -141,7 +162,12 @@ namespace FirstGame.Enemies
 
             if (!_aggro)
             {
-                if (dist <= _cfg.aggroRange && los) { _aggro = true; _armedAt = Time.time + _cfg.reactionDelay; }
+                if (dist <= _cfg.aggroRange && los)
+                {
+                    _aggro = true;
+                    _armedAt = Time.time + _cfg.reactionDelay;
+                    _nextCast = Time.time + 3f; // don't cast the instant we spot the player
+                }
             }
 
             Vector3 move = Vector3.zero;
@@ -157,6 +183,10 @@ namespace FirstGame.Enemies
 
                 if (los && dist <= _cfg.aggroRange && Time.time >= _armedAt && Time.time >= _nextFire)
                     Fire(dist);
+
+                if (!string.IsNullOrEmpty(agentId) && los && dist <= _cfg.aggroRange &&
+                    Time.time >= _armedAt && Time.time >= _nextCast)
+                    CastAgentAbility(dist);
             }
 
             if (_visual != null) _visual.SetSpeed(_aggro && move.sqrMagnitude > 0.01f ? 1f : 0f);
@@ -180,6 +210,45 @@ namespace FirstGame.Enemies
             if (_audio && ProceduralAudio.Shot) _audio.PlayOneShot(ProceduralAudio.Shot, 0.4f);
             float p = _cfg.accuracy * Mathf.Clamp01(1.25f - dist / _cfg.aggroRange);
             if (UnityEngine.Random.value <= p) _targetHealth.TakeDamage(_cfg.damage, AimPoint, Vector3.zero);
+        }
+
+        // Ennemi-agent: cast a non-hitscan spell toward the player. Robust when the player takes
+        // cover (LOS is checked by the caller; nothing here dereferences the player beyond position).
+        void CastAgentAbility(float dist)
+        {
+            _nextCast = Time.time + CastInterval;
+
+            var ag = FirstGame.Agents.AgentCatalog.ById(agentId);
+            Color col = ag != null ? ag.color : ArtPalette.Enemy;
+
+            Vector3 playerPos = _target.position;
+            Vector3 flat = playerPos - transform.position; flat.y = 0f;
+            flat = flat.sqrMagnitude > 0.001f ? flat.normalized : transform.forward;
+
+            if (tier == BotTier.Elite && Time.time >= _nextUlt)
+            {
+                // Ultimate: a large, longer, higher-damage toxic zone dropped on the player.
+                _nextUlt = Time.time + 20f;
+                AbilityFx.Zone(playerPos, col, 4.5f, 20f, 0.5f, 5f, this, null, "botUlt");
+            }
+            else
+            {
+                switch (UnityEngine.Random.Range(0, 3))
+                {
+                    case 0: // block the player's vision
+                        AbilityFx.Smoke(playerPos + Vector3.up * 1f, col, 8f, "bot");
+                        break;
+                    case 1: // cut the angle with a wall between us
+                        AbilityFx.Wall(transform.position + flat * Mathf.Min(dist * 0.5f, 5f), flat, col, 6f, "bot");
+                        break;
+                    default: // hazard under the player
+                        AbilityFx.Zone(playerPos, col, 3f, 10f, 0.5f, 5f, this, null, "bot");
+                        break;
+                }
+            }
+
+            _visual?.Shoot();
+            if (_audio && ProceduralAudio.Ability) _audio.PlayOneShot(ProceduralAudio.Ability, 0.5f);
         }
 
         void Tracer(Vector3 a, Vector3 b)

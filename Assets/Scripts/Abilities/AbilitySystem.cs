@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using FirstGame.Core;
@@ -22,12 +23,20 @@ namespace FirstGame.Abilities
 
         public readonly AbilityData[] Equipped = new AbilityData[3];
         public readonly KeyCode[] Keys = { KeyCode.E, KeyCode.F, KeyCode.C };
+        static readonly GameAction[] SlotActions = { GameAction.AbilityE, GameAction.AbilityF, GameAction.AbilityC };
 
         readonly int[] _charges = new int[3];
         readonly float[] _rechargeAt = new float[3]; // time when the next charge is granted
         readonly float[] _lockUntil = new float[3];  // brief re-use lock after a cast
         float _powerMul = 1f;
         float _cdMul = 1f;
+
+        // ---- Agent passive hooks (set by AgentPassiveSystem before first cast) ----
+        /// <summary>Nocturne (Emprise): multiplies the lifetime of wall/smoke/zone volumes.</summary>
+        public float zoneDurationMul = 1f;
+        /// <summary>Bouclier de Lumière: HP returned if the shield still holds after 5s
+        /// (25 by default, 40 for Rempart — Garde).</summary>
+        public float shieldReturnHp = 25f;
 
         public bool ControlEnabled = true;
 
@@ -47,6 +56,7 @@ namespace FirstGame.Abilities
                 Equipped[i] = i < loadout.Length ? loadout[i] : null;
                 _charges[i] = Equipped[i]?.charges ?? 0;
                 _rechargeAt[i] = 0f;
+                Keys[i] = Keybinds.Get(SlotActions[i]); // keep display in sync with remaps
             }
         }
 
@@ -64,7 +74,7 @@ namespace FirstGame.Abilities
                     if (_charges[i] < a.charges) _rechargeAt[i] = Time.time + a.cooldown * _cdMul;
                 }
 
-                if (ControlEnabled && Input.GetKeyDown(Keys[i]) &&
+                if (ControlEnabled && Input.GetKeyDown(Keybinds.Get(SlotActions[i])) &&
                     _charges[i] > 0 && Time.time >= _lockUntil[i])
                 {
                     Cast(i);
@@ -84,6 +94,22 @@ namespace FirstGame.Abilities
 
         public int Charges(int slot) => _charges[slot];
         public AbilityData Ability(int slot) => Equipped[slot];
+
+        /// <summary>Grant one extra charge to the equipped ability with this id (capped at its max).
+        /// Used by Brasier's passive (Élan Ardent) to refund a Décharge Foudre charge on kill.</summary>
+        public void AddCharge(string abilityId)
+        {
+            for (int i = 0; i < 3; i++)
+                if (Equipped[i] != null && Equipped[i].id == abilityId) { AddCharge(i); return; }
+        }
+
+        public void AddCharge(int slot)
+        {
+            var a = Equipped[slot];
+            if (a == null || _charges[slot] >= a.charges) return;
+            _charges[slot]++;
+            if (_charges[slot] >= a.charges) _rechargeAt[slot] = 0f; // full: stop the regen timer
+        }
 
         void Cast(int slot)
         {
@@ -135,6 +161,7 @@ namespace FirstGame.Abilities
 
                 case AbilityEffect.Shield:
                     playerHealth?.AddShield(60f);
+                    if (playerHealth != null && shieldReturnHp > 0f) StartCoroutine(ShieldReturn());
                     Burst(transform.position, a.color);
                     break;
 
@@ -169,6 +196,13 @@ namespace FirstGame.Abilities
             return fallback;
         }
 
+        // HP returned by Bouclier de Lumière if the shield still holds after 5s.
+        IEnumerator ShieldReturn()
+        {
+            yield return new WaitForSeconds(5f);
+            if (playerHealth != null && playerHealth.Shield > 0f) playerHealth.Heal(shieldReturnHp);
+        }
+
         // Ice wall: solid, opaque slab that blocks bullets AND movement (keep the collider).
         void SpawnWall(AbilityData a)
         {
@@ -176,44 +210,22 @@ namespace FirstGame.Abilities
             Vector3 fwd = cam != null ? cam.transform.forward : transform.forward;
             fwd.y = 0; fwd.Normalize();
             Vector3 basePos = AimedGroundPoint(20f, transform.position + fwd * 4f);
-
-            var go = GameObject.CreatePrimitive(PrimitiveType.Cube); // keep BoxCollider (blocks bullets + bodies)
-            go.name = "IceWall_" + a.id;
-            go.transform.position = basePos + Vector3.up * 1.5f;
-            go.transform.rotation = Quaternion.LookRotation(Vector3.Cross(Vector3.up, fwd));
-            go.transform.localScale = new Vector3(4f, 3f, 0.3f);
-            var c = a.color; c.a = 1f;
-            go.GetComponent<Renderer>().sharedMaterial = ArtPalette.MakeMaterial(c, 0f, 0.6f);
-            Destroy(go, 8f);
+            AbilityFx.Wall(basePos, fwd, a.color, 8f * zoneDurationMul, a.id);
         }
 
         // Shadow smoke: opaque sphere that only blocks vision (no collider).
         void SpawnSmoke(AbilityData a)
         {
             Vector3 center = AimedGroundPoint(20f, transform.position + transform.forward * 8f) + Vector3.up * 1f;
-            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            var col = go.GetComponent<Collider>(); if (col) Destroy(col);
-            go.name = "ShadowSmoke_" + a.id;
-            go.transform.position = center;
-            go.transform.localScale = Vector3.one * 5f;
-            var c = a.color; c.a = 1f;
-            var r = go.GetComponent<Renderer>();
-            r.sharedMaterial = ArtPalette.MakeUnlit(c);
-            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            Destroy(go, 12f);
+            AbilityFx.Smoke(center, a.color, 12f * zoneDurationMul, a.id);
         }
 
         // Toxic zone: trigger DoT volume that damages IDamageables inside (not the caster).
         void SpawnZone(int slot, AbilityData a)
         {
             Vector3 center = AimedGroundPoint(20f, transform.position + transform.forward * 4f);
-            var root = new GameObject("ToxicZone_" + a.id);
-            root.transform.position = center;
-            var z = root.AddComponent<ToxicZone>();
-            z.radius = 3f; z.dps = a.damage * _powerMul; z.tick = 0.5f; z.life = 6f;
-            z.self = playerHealth;
-            z.onHit = d => OnAbilityHit?.Invoke(slot, a, d);
-            Prim.Cylinder(root.transform, Vector3.up * 0.3f, 3f, 0.6f, a.color, unlit: true, name: "ZoneFx");
+            AbilityFx.Zone(center, a.color, 3f, a.damage * _powerMul, 0.5f, 6f * zoneDurationMul,
+                           playerHealth, d => OnAbilityHit?.Invoke(slot, a, d), a.id);
         }
 
         // Wind blast: push enemies within a forward cone.

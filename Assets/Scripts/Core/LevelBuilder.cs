@@ -10,8 +10,9 @@ namespace FirstGame.Core
         {
             var ga = GameAssets.Instance;
             if (ga == null) return false;
-            if (ga.Prop("container_big") != null) { BuildSciFi(arena); return true; }
-            if (ga.Prop("crate") != null) { BuildKenney(arena); return true; }
+            bool beta = MatchConfig.ArenaLayout == 1;
+            if (ga.Prop("container_big") != null) { if (beta) BuildSciFiBeta(arena); else BuildSciFi(arena); return true; }
+            if (ga.Prop("crate") != null) { if (beta) BuildKenneyBeta(arena); else BuildKenney(arena); return true; }
             return false;
         }
 
@@ -61,6 +62,50 @@ namespace FirstGame.Core
             P("pipes", arena, 24, 18, 0, 4f, true);
         }
 
+        // ---- HD sci-fi arena BETA layout ("Réacteur"): open centre, flank bunkers, X of pillars ----
+        static void BuildSciFiBeta(Transform arena)
+        {
+            // Reactor core pushed to the back so the plant site (0,18) stays walkable
+            P("shield_core", arena, 0, 33, 0, 3.4f, true);
+
+            // Two flank bunkers of stacked containers
+            P("container_big", arena, -12, 10, 0, 2.6f, false);
+            P("container_big", arena, -12, 16, 0, 2.6f, false);
+            P("container_big", arena, 12, 10, 0, 2.6f, false);
+            P("container_big", arena, 12, 16, 0, 2.6f, false);
+
+            // Storage blocks near the spawns
+            P("storage_big", arena, -8, -8, 0, 2.4f, false);
+            P("storage_big", arena, 8, -8, 0, 2.4f, false);
+
+            // Scattered crates around the site
+            P("crate_hd", arena, -4, 14, 0, 1.5f, false);
+            P("crate_hd", arena, 5, 10, 0, 1.5f, false);
+            P("crate_hd", arena, -5, 24, 0, 1.5f, false);
+            P("crate_hd", arena, 4, 22, 0, 1.5f, false);
+
+            // Pillars in an X around the site
+            P("pillar", arena, -8, 8, 0, 4.2f, true);
+            P("pillar", arena, 8, 8, 0, 4.2f, true);
+            P("pillar", arena, -8, 28, 0, 4.2f, true);
+            P("pillar", arena, 8, 28, 0, 4.2f, true);
+
+            // Half-walls ringing the site (chest-high cover)
+            P("half_wall", arena, -4, 18, 0, 1.4f, true);
+            P("half_wall", arena, 4, 18, 0, 1.4f, true);
+            P("half_wall", arena, 0, 22, 90, 1.4f, true);
+
+            // Tall walls splitting the flank lanes
+            P("wall_tall", arena, -16, 18, 0, 3.4f, true);
+            P("wall_tall", arena, 16, 18, 0, 3.4f, true);
+
+            // Machines / detail
+            P("generator", arena, -20, 30, 0, 2.4f, true);
+            P("capacitor", arena, 20, 30, 0, 2.4f, true);
+            P("pipes", arena, -24, 12, 0, 4f, true);
+            P("pipes", arena, 24, 12, 0, 4f, true);
+        }
+
         // Keep the imported HD materials (null = don't override).
         static void P(string key, Transform arena, float x, float z, float yRot, float size, bool byHeight)
         {
@@ -93,6 +138,25 @@ namespace FirstGame.Core
             var prefab = GameAssets.Instance.Prop(key);
             if (prefab == null) return;
             ModelUtil.SpawnProp(prefab, arena, new Vector3(x, 0f, z), yRot, size, byHeight, mat);
+        }
+
+        // ---- Kenney prototype BETA layout ----
+        static void BuildKenneyBeta(Transform arena)
+        {
+            var mat = Surfaces.Metal;
+            foreach (var (x, z) in new[] { (-8f, 8f), (8f, 8f), (-8f, 28f), (8f, 28f) })
+                K("column", arena, x, z, 0f, 3.5f, true, mat);
+            foreach (var (x, z) in new[] { (-12f, 13f), (12f, 13f), (0f, 33f) })
+                K("column-rounded", arena, x, z, 0f, 3.6f, true, mat);
+            foreach (var (x, z) in new[] { (-12f, 10f), (-12f, 16f), (12f, 10f), (12f, 16f), (-4f, 14f), (4f, 22f) })
+                K("crate", arena, x, z, 0f, 1.4f, false, mat);
+            foreach (var (x, z) in new[] { (5f, 10f), (-5f, 24f), (-8f, -8f), (8f, -8f) })
+                K("crate-color", arena, x, z, 0f, 1.4f, false, mat);
+            K("wall-low", arena, -4f, 18f, 0f, 1.2f, true, mat);
+            K("wall-low", arena, 4f, 18f, 0f, 1.2f, true, mat);
+            K("wall-low", arena, 0f, 22f, 90f, 1.2f, true, mat);
+            K("wall-low", arena, -16f, 18f, 0f, 1.2f, true, mat);
+            K("wall-low", arena, 16f, 18f, 0f, 1.2f, true, mat);
         }
     }
 }

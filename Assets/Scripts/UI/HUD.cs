@@ -152,8 +152,13 @@ namespace FirstGame.UI
             _ammoText = UIFactory.Label(ammoBlock, "13 / 13", 40, ArtPalette.UiText, TextAnchor.LowerRight, FontStyle.Bold);
             UIFactory.Place(_ammoText.rectTransform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-260, 6), new Vector2(260, 52));
 
-            // Ability slots (bottom-centre): E / F / C
-            string[] keys = { "E", "F", "C" };
+            // Ability slots (bottom-centre): labels follow the current keybinds.
+            string[] keys =
+            {
+                Keybinds.KeyName(Keybinds.Get(GameAction.AbilityE)),
+                Keybinds.KeyName(Keybinds.Get(GameAction.AbilityF)),
+                Keybinds.KeyName(Keybinds.Get(GameAction.AbilityC)),
+            };
             for (int i = 0; i < 3; i++)
             {
                 var slot = UIFactory.AddChild(root, "Ability_" + keys[i]);

@@ -99,7 +99,7 @@ namespace FirstGame.Equipment
                 if (_charges < max) _rechargeAt = Time.time + cd;
                 OnChargesChanged?.Invoke(_charges, max);
             }
-            if (ControlEnabled && Input.GetKeyDown(KeyCode.G) && _charges > 0)
+            if (ControlEnabled && Input.GetKeyDown(Keybinds.Get(GameAction.Utility)) && _charges > 0)
             {
                 _charges--;
                 if (_rechargeAt < Time.time) _rechargeAt = Time.time + cd;

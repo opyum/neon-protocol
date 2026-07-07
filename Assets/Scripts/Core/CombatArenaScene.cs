@@ -8,6 +8,16 @@ namespace FirstGame.Core
     /// <summary>Combat arena: player rig vs bots, with an in-scene mission picker (Duel / Round / Examen).</summary>
     public static class CombatArenaScene
     {
+        static GameObject _arenaGo; // current arena root, so the layout can be rebuilt from the picker
+
+        /// <summary>Switches the arena layout (0 = Alpha, 1 = Beta) and rebuilds the cover in place.</summary>
+        public static void SetArenaLayout(int layout)
+        {
+            MatchConfig.ArenaLayout = layout;
+            if (_arenaGo != null) Object.Destroy(_arenaGo);
+            BuildArena();
+        }
+
         public static void Build()
         {
             Env.SetupStylized(fog: true);
@@ -65,9 +75,15 @@ namespace FirstGame.Core
             UIFactory.Stretch(panel.rectTransform);
 
             var title = UIFactory.Label(root, "MISSIONS DE COMBAT", 54, ArtPalette.NeonCyan, TextAnchor.UpperCenter, FontStyle.Bold);
-            UIFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -120), new Vector2(1200, 64));
+            UIFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -70), new Vector2(1200, 64));
             var sub = UIFactory.Label(root, "Choisis ta mission. Ton loadout (arme, 3 sorts, équipement) s'applique.", 22, ArtPalette.UiDim, TextAnchor.UpperCenter);
-            UIFactory.Place(sub.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -186), new Vector2(1200, 30));
+            UIFactory.Place(sub.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -134), new Vector2(1200, 30));
+
+            // Selector row: arena layout (rebuilds the cover) + bot difficulty (saved preference).
+            MakeCycle(root, new Vector2(-200, 300), "ARÈNE : ", () => MatchConfig.ArenaName,
+                () => SetArenaLayout((MatchConfig.ArenaLayout + 1) % MatchConfig.ArenaNames.Length));
+            MakeCycle(root, new Vector2(200, 300), "DIFFICULTÉ : ", () => MatchConfig.DifficultyName,
+                () => MatchConfig.Difficulty = (MatchConfig.Difficulty + 1) % MatchConfig.DifficultyNames.Length);
 
             (string t, string d, System.Action play)[] missions =
             {
@@ -75,25 +91,27 @@ namespace FirstGame.Core
                 ("LE ROUND", "Capture et sécurise la zone contre 4 défenseurs. 2 vies. +250 XP.", () => mgr.StartMission(1)),
                 ("EXAMEN", "4 vagues d'assaut jusqu'au chef d'élite. 3 vies. +400 XP (bonus sans mort).", () => mgr.StartMission(2)),
                 ("CLASSÉ", "Duel 1v1 classé contre un bot à ton niveau. Gagne/perds de l'ELO.", () => mgr.StartRanked()),
+                ("SPIKE — POSE / DÉSAMORÇAGE", "Arme la charge sur le site et défends-la jusqu'à détonation. 2 vies. +300 XP.", () => mgr.StartSpike()),
             };
             for (int i = 0; i < missions.Length; i++)
             {
                 var act = missions[i].play;
                 var card = UIFactory.AddChild(root, "Mission_" + i);
-                UIFactory.Place(card, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 172 - i * 122), new Vector2(760, 104));
+                UIFactory.Place(card, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 210 - i * 112), new Vector2(820, 100));
                 UIFactory.Panel(card, new Color(ArtPalette.UiInk.r, ArtPalette.UiInk.g, ArtPalette.UiInk.b, 0.85f));
 
                 var accent = UIFactory.AddChild(card, "Accent");
-                UIFactory.Place(accent, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(4, 0), new Vector2(8, 88));
-                accent.gameObject.AddComponent<Image>().color = i == 3 ? ArtPalette.Objective : ArtPalette.AccentFor(i);
+                UIFactory.Place(accent, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(4, 0), new Vector2(8, 84));
+                Color accentColor = i == 3 ? ArtPalette.Objective : (i == 4 ? ArtPalette.Danger : ArtPalette.AccentFor(i));
+                accent.gameObject.AddComponent<Image>().color = accentColor;
 
-                var name = UIFactory.Label(card, missions[i].t, 32, ArtPalette.UiText, TextAnchor.UpperLeft, FontStyle.Bold);
-                UIFactory.Place(name.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(30, -12), new Vector2(500, 38));
+                var name = UIFactory.Label(card, missions[i].t, 30, ArtPalette.UiText, TextAnchor.UpperLeft, FontStyle.Bold);
+                UIFactory.Place(name.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(30, -12), new Vector2(560, 36));
                 var desc = UIFactory.Label(card, missions[i].d, 18, ArtPalette.UiDim, TextAnchor.UpperLeft);
-                UIFactory.Place(desc.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(32, -52), new Vector2(560, 44));
+                UIFactory.Place(desc.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(32, -50), new Vector2(600, 44));
 
                 var play = UIFactory.AddChild(card, "Play");
-                UIFactory.Place(play, new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-20, 0), new Vector2(150, 58));
+                UIFactory.Place(play, new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-20, 0), new Vector2(150, 56));
                 UIFactory.Button(play, "JOUER", ArtPalette.NeonCyan, ArtPalette.UiInk, () =>
                 {
                     canvas.gameObject.SetActive(false);
@@ -106,9 +124,31 @@ namespace FirstGame.Core
             UIFactory.Button(back, "RETOUR AU MENU", ArtPalette.Cover, ArtPalette.UiText, () => GameManager.LoadScene(SceneNames.MainMenu), 22);
         }
 
+        /// <summary>A labelled panel that cycles a value on click (arena / difficulty selectors).</summary>
+        static void MakeCycle(Transform root, Vector2 pos, string prefix, System.Func<string> current, System.Action onCycle)
+        {
+            var card = UIFactory.AddChild(root, "Cycle_" + prefix);
+            UIFactory.Place(card, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), pos, new Vector2(380, 56));
+            var img = card.gameObject.AddComponent<Image>();
+            img.color = new Color(ArtPalette.UiInk.r, ArtPalette.UiInk.g, ArtPalette.UiInk.b, 0.9f);
+
+            var btn = card.gameObject.AddComponent<Button>();
+            btn.targetGraphic = img;
+            var colors = btn.colors;
+            colors.highlightedColor = new Color(0.75f, 1f, 1f, 1f);
+            colors.fadeDuration = 0.08f;
+            btn.colors = colors;
+
+            var lbl = UIFactory.Label(card, prefix + current(), 22, ArtPalette.UiText, TextAnchor.MiddleCenter, FontStyle.Bold);
+            UIFactory.Stretch(lbl.rectTransform, 8);
+
+            btn.onClick.AddListener(() => { UiAudio.I.Click(); onCycle(); lbl.text = prefix + current(); });
+        }
+
         static void BuildArena()
         {
             var arena = new GameObject("CombatArena").transform;
+            _arenaGo = arena.gameObject;
 
             var floor = Prim.Box(arena, new Vector3(0, -0.25f, 10f), new Vector3(70, 0.5f, 70), ArtPalette.Floor, smoothness: 0.12f, name: "Floor");
             floor.GetComponent<Renderer>().sharedMaterial = Surfaces.Floor;

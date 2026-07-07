@@ -21,14 +21,28 @@ namespace FirstGame.Player
         [Header("Look")]
         public float mouseSensitivity = 2.0f;
         public Transform cameraPivot;
+        public Camera cam;                 // set by PlayerRig; drives FOV + ADS zoom
+        public float adsFovScale = 0.72f;  // FOV multiplier while aiming
 
         CharacterController _cc;
         float _pitch;
         Vector3 _velocity;
         float _speedMul = 1f;
 
+        // Temporary speed buff (e.g. Brasier — Élan Ardent: +12% for 3s after a kill).
+        float _buffMul = 1f;
+        float _buffUntil = -1f;
+        float BuffMul => Time.time < _buffUntil ? _buffMul : 1f;
+
         public bool ControlEnabled = true;
         public float equipSpeedMul = 1f; // set by equipment (armour)
+
+        /// <summary>Apply a timed speed multiplier (latest call wins). Used by agent passives.</summary>
+        public void AddSpeedBuff(float multiplier, float duration)
+        {
+            _buffMul = multiplier;
+            _buffUntil = Time.time + duration;
+        }
         public bool IsGrounded => _cc != null && _cc.isGrounded;
         public float CurrentSpeed { get; private set; }
 
@@ -47,15 +61,18 @@ namespace FirstGame.Player
         void Update()
         {
             if (!ControlEnabled) return;
-            Look();
+            bool aiming = Keybinds.Held(GameAction.Aim);
+            Look(aiming);
             Move();
+            ApplyFov(aiming);
         }
 
-        void Look()
+        void Look(bool aiming)
         {
-            float sens = Settings.MouseSensitivity;
+            float sens = Settings.MouseSensitivity * (aiming ? Settings.AdsSensMultiplier : 1f);
             float mx = Input.GetAxis("Mouse X") * sens;
             float my = Input.GetAxis("Mouse Y") * sens;
+            if (Settings.InvertY) my = -my;
 
             AccumYaw += Mathf.Abs(mx);
             AccumPitch += Mathf.Abs(my);
@@ -65,19 +82,27 @@ namespace FirstGame.Player
             if (cameraPivot) cameraPivot.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
         }
 
+        void ApplyFov(bool aiming)
+        {
+            if (cam == null) return;
+            float target = aiming ? Settings.FieldOfView * adsFovScale : Settings.FieldOfView;
+            cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, target, 0.35f);
+        }
+
         void Move()
         {
             float x = 0f, z = 0f;
-            if (K(KeyCode.Z) || K(KeyCode.W) || K(KeyCode.UpArrow)) z += 1f;
-            if (K(KeyCode.S) || K(KeyCode.DownArrow)) z -= 1f;
-            if (K(KeyCode.Q) || K(KeyCode.A) || K(KeyCode.LeftArrow)) x -= 1f;
-            if (K(KeyCode.D) || K(KeyCode.RightArrow)) x += 1f;
+            // Rebindable keys (Keybinds) + arrow keys always available as a fallback.
+            if (Keybinds.Held(GameAction.Forward) || K(KeyCode.UpArrow)) z += 1f;
+            if (Keybinds.Held(GameAction.Back)    || K(KeyCode.DownArrow)) z -= 1f;
+            if (Keybinds.Held(GameAction.Left)    || K(KeyCode.LeftArrow)) x -= 1f;
+            if (Keybinds.Held(GameAction.Right)   || K(KeyCode.RightArrow)) x += 1f;
 
             Vector3 dir = transform.right * x + transform.forward * z;
             if (dir.sqrMagnitude > 1f) dir.Normalize();
 
-            float speed = baseMoveSpeed * _speedMul * equipSpeedMul;
-            if (Input.GetKey(KeyCode.LeftShift)) speed *= sprintMultiplier;
+            float speed = baseMoveSpeed * _speedMul * equipSpeedMul * BuffMul;
+            if (Keybinds.Held(GameAction.Sprint)) speed *= sprintMultiplier;
 
             Vector3 horizontal = dir * speed;
             CurrentSpeed = new Vector2(horizontal.x, horizontal.z).magnitude;
@@ -85,7 +110,7 @@ namespace FirstGame.Player
             if (_cc.isGrounded)
             {
                 if (_velocity.y < 0f) _velocity.y = -2f;
-                if (Input.GetKeyDown(KeyCode.Space))
+                if (Keybinds.Pressed(GameAction.Jump))
                 {
                     _velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
                     JumpCount++;

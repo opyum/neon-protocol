@@ -30,7 +30,7 @@ namespace FirstGame.Campaign
         bool _ranked;
         int _rankedOpp;
 
-        Text _livesLabel, _enemiesLabel;
+        Text _livesLabel, _enemiesLabel, _captureLabel;
         Image _captureFill;
         GameObject _captureBar;
 
@@ -68,6 +68,7 @@ namespace FirstGame.Campaign
         void StartMissionInternal(int index)
         {
             _over = false; _deaths = 0;
+            MatchConfig.ApplyDifficulty();
             BuildMiniHud();
             health.OnDied += OnPlayerDied;
             SetControls(true);
@@ -92,6 +93,7 @@ namespace FirstGame.Campaign
         void StartRankedInternal()
         {
             _over = false; _deaths = 0; _ranked = true;
+            MatchConfig.ResetBotModifiers();
             BuildMiniHud();
             health.OnDied += OnPlayerDied;
             SetControls(true);
@@ -221,12 +223,123 @@ namespace FirstGame.Campaign
             Win(xp, _deaths == 0 ? "EXAMEN RÉUSSI — SANS FAUTE !" : "EXAMEN RÉUSSI");
         }
 
-        // ---------- Helpers ----------
-        EnemyBot SpawnBot(Vector3 pos, BotTier tier, float scale = 1f)
+        // ---------- Mode Pose / Désamorçage (spike) ----------
+        public void StartSpike()
         {
-            var b = EnemyBot.Spawn(arena, pos, tier, controller.transform, health, autoRespawn: false, scale: scale, name: "Bot_" + tier);
+            BeginWithBuy("Pose / Désamorçage — équipe-toi pour l'assaut.", StartSpikeInternal);
+        }
+
+        void StartSpikeInternal()
+        {
+            _over = false; _deaths = 0;
+            MatchConfig.ApplyDifficulty();
+            BuildMiniHud();
+            health.OnDied += OnPlayerDied;
+            SetControls(true);
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            _lives = 2;
+            UpdateLives();
+            StartCoroutine(RunSpike());
+        }
+
+        IEnumerator RunSpike()
+        {
+            Vector3 site = zoneCenter; // amber disc at (0,0,18)
+            const float PlantTime = 4f, FuseTime = 30f, DefuseTime = 6f;
+
+            ui.ShowStep(1, 1, "POSE / DÉSAMORÇAGE — Attaque : arme la charge sur le site.",
+                "Reste sur le disque ambre pour armer. Ensuite, défends la charge jusqu'à la détonation.");
+            ShowCaptureBar(true);
+
+            SpawnBot(new Vector3(-5, 0, 26), BotTier.Soldat);
+            SpawnBot(new Vector3(5, 0, 26), BotTier.Soldat);
+            SpawnBot(new Vector3(0, 0, 30), BotTier.Veteran);
+            UpdateEnemies();
+
+            // Phase 1 — plant, OR win outright by wiping the defenders.
+            float plant = 0f;
+            bool planted = false;
+            while (!planted && !_over)
+            {
+                if (AliveCount() == 0) { Win(250, "DÉFENSEURS ÉLIMINÉS"); yield break; }
+                bool playerIn = health.IsAlive && Flat(controller.transform.position, site) < 4f;
+                plant += (playerIn ? 1f : -0.5f) * Time.deltaTime;
+                plant = Mathf.Clamp(plant, 0f, PlantTime);
+                SetCaptureColor(ArtPalette.Objective);
+                UpdateCapture(plant / PlantTime * 100f);
+                SetStateText(playerIn ? "POSE EN COURS…" : "REJOINS LE SITE POUR ARMER");
+                if (plant >= PlantTime) planted = true;
+                UpdateEnemies();
+                yield return null;
+            }
+            if (_over) yield break;
+            ui.Toast("CHARGE ARMÉE !");
+
+            // Phase 2 — fuse counts down; a defender standing on the site defuses it.
+            float fuse = FuseTime, defuse = 0f;
+            while (fuse > 0f && !_over)
+            {
+                fuse -= Time.deltaTime;
+                int botsOnSite = 0;
+                foreach (var b in _bots)
+                    if (b != null && b.IsAlive && Flat(b.transform.position, site) < 4f) botsOnSite++;
+
+                defuse += (botsOnSite > 0 ? 1f : -1.5f) * Time.deltaTime;
+                defuse = Mathf.Clamp(defuse, 0f, DefuseTime);
+
+                if (defuse > 0f)
+                {
+                    SetCaptureColor(ArtPalette.NeonCyan);
+                    UpdateCapture(defuse / DefuseTime * 100f);
+                    SetStateText($"DÉSAMORÇAGE… défends le site ! ({Mathf.CeilToInt(DefuseTime - defuse)}s)");
+                }
+                else
+                {
+                    SetCaptureColor(ArtPalette.Enemy);
+                    UpdateCapture(fuse / FuseTime * 100f);
+                    SetStateText($"DÉTONATION DANS {Mathf.CeilToInt(fuse)}s");
+                }
+
+                if (defuse >= DefuseTime) { SpikeLose("La charge a été désamorcée."); yield break; }
+                UpdateEnemies();
+                yield return null;
+            }
+            if (_over) yield break;
+            Win(300, "SITE DÉTRUIT — VICTOIRE");
+        }
+
+        void SpikeLose(string reason)
+        {
+            if (_over) return;
+            _over = true;
+            SetControls(false);
+            DespawnBots();
+            ui.ShowResult("MANCHE PERDUE", reason,
+                "Empêche les défenseurs d'atteindre le site après la pose.", ArtPalette.Enemy,
+                "RÉESSAYER", () => GameManager.LoadScene(SceneNames.CombatArena),
+                () => GameManager.LoadScene(SceneNames.MainMenu));
+        }
+
+        void SetStateText(string s) { if (_captureLabel) _captureLabel.text = s; }
+        void SetCaptureColor(Color c) { if (_captureFill) _captureFill.color = c; }
+
+        // ---------- Helpers ----------
+        EnemyBot SpawnBot(Vector3 pos, BotTier tier, float scale = 1f, string agentId = null)
+        {
+            agentId ??= AutoAgentFor(tier);
+            var b = EnemyBot.Spawn(arena, pos, tier, controller.transform, health,
+                                   autoRespawn: false, scale: scale, name: "Bot_" + tier, agentId: agentId);
             _bots.Add(b);
             return b;
+        }
+
+        // Strong bots become "ennemis-agents" (spell casters) to credibilise le solo.
+        static string AutoAgentFor(BotTier tier)
+        {
+            if (tier == BotTier.Elite) return "agent_nocturne";
+            if (tier == BotTier.Veteran && UnityEngine.Random.value < 0.5f) return "agent_faille";
+            return null;
         }
 
         int AliveCount()
@@ -310,6 +423,10 @@ namespace FirstGame.Campaign
             _captureFill.type = Image.Type.Filled;
             _captureFill.fillMethod = Image.FillMethod.Horizontal;
             _captureFill.fillAmount = 0f;
+
+            _captureLabel = UIFactory.Label(_captureBar.transform, "", 18, ArtPalette.UiText, TextAnchor.MiddleCenter, FontStyle.Bold);
+            UIFactory.Stretch(_captureLabel.rectTransform);
+
             _captureBar.SetActive(false);
         }
 

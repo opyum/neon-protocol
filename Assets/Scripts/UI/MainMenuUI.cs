@@ -30,6 +30,8 @@ namespace FirstGame.UI
         GameObject _agentsPanel;
         readonly List<(string id, Image border)> _agentCards = new();
 
+        GameObject _optionsPanel;
+
         static readonly (string id, string name, string effect)[] Stats =
         {
             ("vitalite",     "VITALITÉ",      "+6 PV par point"),
@@ -84,6 +86,7 @@ namespace FirstGame.UI
                 ("ARSENAL",            "Arme et équipement",                    ArtPalette.Objective),
                 ("PERSONNAGE",         "Niveaux & points de statistiques",      ArtPalette.Player),
                 ("MULTIJOUEUR",        "1v1 en réseau local (bêta)",            ArtPalette.NeonMag),
+                ("OPTIONS",            "Sensibilité, touches, plein écran…",     ArtPalette.NeonCyan),
                 ("QUITTER",            "Fermer le jeu",                          ArtPalette.Enemy),
             };
             for (int i = 0; i < items.Length; i++)
@@ -112,6 +115,11 @@ namespace FirstGame.UI
             BuildLoadoutPanel(root);
             BuildEquipmentPanel(root);
             BuildAgentsPanel(root);
+
+            // Shared options screen (no live camera in the menu — FOV still persists).
+            var op = OptionsPanel.Create(root, () => _optionsPanel.SetActive(false), null);
+            _optionsPanel = op.gameObject;
+            _optionsPanel.SetActive(false);
         }
 
         void OnMenu(int index)
@@ -125,7 +133,8 @@ namespace FirstGame.UI
                 case 4: _loadoutPanel.SetActive(true); RefreshLoadout(); break;
                 case 5: _characterPanel.SetActive(true); RefreshCharacter(); break;
                 case 6: FirstGame.Net.NetSession.Pending = true; GameManager.LoadScene(SceneNames.CombatArena); break;
-                case 7: Quit(); break;
+                case 7: _optionsPanel.SetActive(true); break;
+                case 8: Quit(); break;
                 default: break;
             }
         }

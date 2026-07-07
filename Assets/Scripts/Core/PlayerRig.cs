@@ -45,6 +45,7 @@ namespace FirstGame.Core
             player.layer = IgnoreRaycast;
 
             r.controller = player.AddComponent<FirstPersonController>();
+            // (r.controller.cam is wired below, once the camera exists.)
 
             var pivot = new GameObject("CameraPivot");
             pivot.transform.SetParent(player.transform, false);
@@ -56,10 +57,11 @@ namespace FirstGame.Core
             r.camera = camGo.AddComponent<Camera>();
             r.camera.clearFlags = CameraClearFlags.Skybox;
             r.camera.backgroundColor = ArtPalette.Sky;
-            r.camera.fieldOfView = 90f;
+            r.camera.fieldOfView = Settings.FieldOfView;
             r.camera.nearClipPlane = 0.05f;
             camGo.AddComponent<AudioListener>();
             camGo.tag = "MainCamera";
+            r.controller.cam = r.camera; // drives live FOV + ADS zoom
             r.shake = camGo.AddComponent<CameraShake>();
             PostFx.EnablePostProcessing(r.camera);
 
@@ -107,6 +109,9 @@ namespace FirstGame.Core
             EquipmentEffects.ApplyArmor(EquipmentCatalog.ById(PlayerProfile.Current.equipmentId), r);
             var util = player.AddComponent<UtilityController>();
             util.Init(EquipmentCatalog.ById(PlayerProfile.Current.utilityId), r);
+
+            // Agent passive (Élan Ardent / Emprise / Onde de Choc / Garde)
+            player.AddComponent<FirstGame.Agents.AgentPassiveSystem>().Init(r);
 
             return r;
         }

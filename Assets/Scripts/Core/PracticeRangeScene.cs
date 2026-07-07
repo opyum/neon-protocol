@@ -34,9 +34,12 @@ namespace FirstGame.Core
             var title = UIFactory.Label(infoCanvas.transform, "STAND DE TIR", 26, ArtPalette.NeonCyan, TextAnchor.UpperCenter, FontStyle.Bold);
             UIFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -16), new Vector2(700, 34));
             var help = UIFactory.Label(infoCanvas.transform,
-                "1-5 : changer d'arme   •   Clic gauche : tirer   •   E / F / C : sorts   •   R : recharger   •   Échap : menu",
+                "1-5 : changer d'arme   •   Clic gauche : tirer   •   E / F / C : sorts   •   R : recharger   •   T : épreuve chrono   •   Échap : menu",
                 18, ArtPalette.UiText, TextAnchor.UpperCenter);
             UIFactory.Place(help.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -52), new Vector2(1200, 28));
+
+            // Timed precision drill (press T). Shows score + saved best.
+            PracticeDrill.Attach(rig.weapon);
 
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
