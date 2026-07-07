@@ -14,19 +14,24 @@ namespace FirstGame.Core
 
     /// <summary>
     /// Rebindable key map, persisted in PlayerPrefs. ALL gameplay input reads through this so
-    /// remaps take effect immediately and survive restarts. Defaults are AZERTY (ZQSD) to match
-    /// the project's French UI; arrow keys stay hard-wired as a movement fallback.
+    /// remaps take effect immediately and survive restarts. Arrow keys stay hard-wired as a fallback.
+    ///
+    /// NOTE AZERTY : Unity's legacy Input maps KeyCode to the PHYSICAL key at the US-QWERTY position,
+    /// not the printed letter. So a French AZERTY "ZQSD" layout needs KeyCodes W/A/S/D (the Z key sits
+    /// where QWERTY W is → KeyCode.W, the Q key where QWERTY A is → KeyCode.A). KeyName() below shows
+    /// the AZERTY letters so the menu matches the physical keyboard.
     /// </summary>
     public static class Keybinds
     {
         public static readonly GameAction[] All = (GameAction[])Enum.GetValues(typeof(GameAction));
+        const int Version = 2; // bump to force new defaults over stale saved binds
 
         static readonly Dictionary<GameAction, KeyCode> Defaults = new()
         {
-            { GameAction.Forward,  KeyCode.Z },
-            { GameAction.Back,     KeyCode.S },
-            { GameAction.Left,     KeyCode.Q },
-            { GameAction.Right,    KeyCode.D },
+            { GameAction.Forward,  KeyCode.W }, // AZERTY 'Z'
+            { GameAction.Back,     KeyCode.S }, // AZERTY 'S'
+            { GameAction.Left,     KeyCode.A }, // AZERTY 'Q'
+            { GameAction.Right,    KeyCode.D }, // AZERTY 'D'
             { GameAction.Jump,     KeyCode.Space },
             { GameAction.Sprint,   KeyCode.LeftShift },
             { GameAction.Fire,     KeyCode.Mouse0 },
@@ -63,8 +68,15 @@ namespace FirstGame.Core
                 if (_cache == null)
                 {
                     _cache = new Dictionary<GameAction, KeyCode>();
+                    bool migrate = PlayerPrefs.GetInt("key.version", 0) < Version;
                     foreach (var a in All)
-                        _cache[a] = (KeyCode)PlayerPrefs.GetInt(PrefKey(a), (int)Defaults[a]);
+                        _cache[a] = migrate ? Defaults[a] : (KeyCode)PlayerPrefs.GetInt(PrefKey(a), (int)Defaults[a]);
+                    if (migrate)
+                    {
+                        foreach (var a in All) PlayerPrefs.SetInt(PrefKey(a), (int)Defaults[a]);
+                        PlayerPrefs.SetInt("key.version", Version);
+                        PlayerPrefs.Save();
+                    }
                 }
                 return _cache;
             }
@@ -106,6 +118,11 @@ namespace FirstGame.Core
         /// <summary>French-friendly display name for a key.</summary>
         public static string KeyName(KeyCode k) => k switch
         {
+            // AZERTY display: these KeyCodes sit under different printed letters on a French keyboard.
+            KeyCode.W => "Z",
+            KeyCode.A => "Q",
+            KeyCode.Q => "A",
+            KeyCode.Z => "W",
             KeyCode.Mouse0 => "Clic G.",
             KeyCode.Mouse1 => "Clic D.",
             KeyCode.Mouse2 => "Clic M.",
