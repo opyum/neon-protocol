@@ -61,6 +61,15 @@ namespace FirstGame.Player
         void Update()
         {
             if (!ControlEnabled) return;
+
+            // Re-assert the cursor lock every frame: in windowed mode Unity/Windows can silently
+            // drop CursorLockMode.Locked (fast movement, focus quirks) and the cursor escapes.
+            if (Cursor.lockState != CursorLockMode.Locked)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+
             bool aiming = Keybinds.Held(GameAction.Aim);
             Look(aiming);
             Move();
