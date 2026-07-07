@@ -14,6 +14,9 @@ namespace FirstGame.Combat
         [NonSerialized] public WeaponData weapon = WeaponCatalog.Default;
         public LayerMask hitMask = Physics.DefaultRaycastLayers; // excludes Ignore Raycast (the player)
         public Transform muzzle; // optional visual origin for the tracer
+        public Transform viewmodelRoot; // camera transform; the viewmodel is parented + rebuilt here
+        WeaponData _primary, _secondary;
+        GameObject _viewmodel;
 
         public int Ammo { get; private set; }
         public bool Reloading { get; private set; }
@@ -45,6 +48,8 @@ namespace FirstGame.Combat
         {
             if (!ControlEnabled) return;
 
+            TrySwitchInput();
+
             if (Reloading)
             {
                 if (Time.time >= _reloadEndTime)
@@ -72,14 +77,55 @@ namespace FirstGame.Combat
             OnAmmoChanged?.Invoke(Ammo, weapon.magazineSize);
         }
 
+        /// <summary>Set the two carried weapons and equip the primary. Switch in-game with 1/2/wheel.</summary>
+        public void SetLoadout(WeaponData primary, WeaponData secondary)
+        {
+            _primary = primary ?? WeaponCatalog.Default;
+            _secondary = secondary ?? _primary;
+            SwitchWeapon(_primary);
+        }
+
         public void SwitchWeapon(WeaponData w)
         {
             if (w == null) return;
             weapon = w;
             Reloading = false;
             Ammo = weapon.magazineSize;
+            BuildViewmodel();
             OnWeaponChanged?.Invoke();
             OnAmmoChanged?.Invoke(Ammo, weapon.magazineSize);
+        }
+
+        void BuildViewmodel()
+        {
+            if (viewmodelRoot == null) return;
+            if (_viewmodel != null) Destroy(_viewmodel);
+            var ga = GameAssets.Instance;
+            var prefab = ga != null ? ga.WeaponFor(weapon.id) : null;
+            if (prefab != null)
+            {
+                _viewmodel = ModelUtil.Spawn(prefab, viewmodelRoot, 0.26f, byHeight: false,
+                                             ArtPalette.MakeMaterial(ArtPalette.Metal, 0.7f, 0.6f));
+                _viewmodel.transform.localPosition = new Vector3(0.16f, -0.18f, 0.45f);
+                _viewmodel.transform.localRotation = Quaternion.identity;
+            }
+            else
+            {
+                _viewmodel = Prim.Box(viewmodelRoot, new Vector3(0.35f, -0.28f, 0.6f), new Vector3(0.12f, 0.12f, 0.5f),
+                                      ArtPalette.Player, collider: false, name: "Viewmodel");
+            }
+            _viewmodel.name = "Viewmodel";
+            ModelUtil.SetLayerRecursive(_viewmodel, PlayerRig.IgnoreRaycast);
+        }
+
+        void TrySwitchInput()
+        {
+            if (_primary == null) return;
+            if (Input.GetKeyDown(KeyCode.Alpha1) && weapon != _primary) { SwitchWeapon(_primary); return; }
+            if (Input.GetKeyDown(KeyCode.Alpha2) && _secondary != null && weapon != _secondary) { SwitchWeapon(_secondary); return; }
+            float wheel = Input.GetAxis("Mouse ScrollWheel");
+            if (Mathf.Abs(wheel) > 0.01f && _secondary != null && _secondary != _primary)
+                SwitchWeapon(weapon == _primary ? _secondary : _primary);
         }
 
         public void BeginReload()

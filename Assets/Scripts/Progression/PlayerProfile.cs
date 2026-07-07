@@ -20,7 +20,8 @@ namespace FirstGame.Progression
         public int unspentPoints = 0;
 
         // Chosen loadout (weapon id + 3 ability ids). Resolved via the catalogs.
-        public string weaponId = "wpn_pistolet_eclat";
+        public string weaponId = "wpn_fusil_rempart";          // primary
+        public string secondaryWeaponId = "wpn_pistolet_eclat"; // secondary (switch in-game)
         public string ability0 = "trait_de_feu";
         public string ability1 = "decharge_foudre";
         public string ability2 = "bouclier_de_lumiere";
@@ -109,6 +110,7 @@ namespace FirstGame.Progression
         }
 
         public void SetWeapon(string id) { weaponId = id; Save(); }
+        public void SetSecondaryWeapon(string id) { secondaryWeaponId = id; Save(); }
         public void SetEquipment(string id) { equipmentId = id; Save(); }
         public void SetUtility(string id) { utilityId = id; Save(); }
 

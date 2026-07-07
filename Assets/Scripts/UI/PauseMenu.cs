@@ -79,10 +79,11 @@ namespace FirstGame.UI
             UIFactory.Stretch((RectTransform)_mainPanel.transform);
             var title = UIFactory.Label(_mainPanel.transform, "PAUSE", 64, ArtPalette.NeonCyan, TextAnchor.MiddleCenter, FontStyle.Bold);
             UIFactory.Place(title.rectTransform, C, C, new Vector2(0, 190), new Vector2(600, 84));
-            MenuBtn(_mainPanel.transform, 70, "REPRENDRE", ArtPalette.NeonCyan, ArtPalette.UiInk, Resume);
-            MenuBtn(_mainPanel.transform, -10, "OPTIONS", ArtPalette.Cover, ArtPalette.UiText,
+            MenuBtn(_mainPanel.transform, 110, "REPRENDRE", ArtPalette.NeonCyan, ArtPalette.UiInk, Resume);
+            MenuBtn(_mainPanel.transform, 30, "MODIFIER LE BUILD", ArtPalette.NeonMag, ArtPalette.UiInk, OpenLoadout);
+            MenuBtn(_mainPanel.transform, -50, "OPTIONS", ArtPalette.Cover, ArtPalette.UiText,
                 () => { _mainPanel.SetActive(false); _optionsPanel.SetActive(true); });
-            MenuBtn(_mainPanel.transform, -90, "MENU PRINCIPAL", ArtPalette.Cover, ArtPalette.UiText,
+            MenuBtn(_mainPanel.transform, -130, "MENU PRINCIPAL", ArtPalette.Cover, ArtPalette.UiText,
                 () =>
                 {
                     Time.timeScale = 1f;
@@ -90,7 +91,7 @@ namespace FirstGame.UI
                     if (nm != null && nm.IsListening) nm.Shutdown();
                     GameManager.LoadScene(SceneNames.MainMenu);
                 });
-            MenuBtn(_mainPanel.transform, -170, "QUITTER", ArtPalette.Enemy, ArtPalette.UiInk, Quit);
+            MenuBtn(_mainPanel.transform, -210, "QUITTER", ArtPalette.Enemy, ArtPalette.UiInk, Quit);
 
             // Shared options screen. Camera.main is the live gameplay camera so FOV updates instantly.
             var op = OptionsPanel.Create(_root.transform,
@@ -100,6 +101,12 @@ namespace FirstGame.UI
             _optionsPanel.SetActive(false);
 
             _root.SetActive(false);
+        }
+
+        void OpenLoadout()
+        {
+            _root.SetActive(false);
+            new GameObject("[Loadout]").AddComponent<LoadoutScreen>().Show(Resume);
         }
 
         void MenuBtn(Transform parent, float y, string label, Color bg, Color fg, Action onClick)

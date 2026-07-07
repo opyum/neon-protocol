@@ -45,7 +45,11 @@ namespace FirstGame.Abilities
         /// <summary>(slot, ability, target) fired when a cast damages something.</summary>
         public event Action<int, AbilityData, IDamageable> OnAbilityHit;
 
-        void Awake()
+        void Awake() => ReloadLoadout();
+
+        /// <summary>Re-resolves the equipped abilities from the profile (agent). Call after the player
+        /// changes their build mid-scene (loadout screen).</summary>
+        public void ReloadLoadout()
         {
             _powerMul = PlayerProfile.Current.AbilityPowerMultiplier;
             _cdMul = PlayerProfile.Current.CooldownMultiplier;
