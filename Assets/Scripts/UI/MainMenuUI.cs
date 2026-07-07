@@ -83,12 +83,13 @@ namespace FirstGame.UI
                 ("AGENTS",             "Choisis ton agent et ses 3 sorts",      ArtPalette.NeonMag),
                 ("ARSENAL",            "Arme et équipement",                    ArtPalette.Objective),
                 ("PERSONNAGE",         "Niveaux & points de statistiques",      ArtPalette.Player),
+                ("MULTIJOUEUR",        "1v1 en réseau local (bêta)",            ArtPalette.NeonMag),
                 ("QUITTER",            "Fermer le jeu",                          ArtPalette.Enemy),
             };
             for (int i = 0; i < items.Length; i++)
             {
                 int idx = i;
-                MenuButton(root, -330 - i * 92, items[i].accent, items[i].title, items[i].sub, () => OnMenu(idx));
+                MenuButton(root, -300 - i * 84, items[i].accent, items[i].title, items[i].sub, () => OnMenu(idx));
             }
 
             // --- Level chip (top-right) ---
@@ -123,7 +124,8 @@ namespace FirstGame.UI
                 case 3: _agentsPanel.SetActive(true); RefreshAgents(); break;
                 case 4: _loadoutPanel.SetActive(true); RefreshLoadout(); break;
                 case 5: _characterPanel.SetActive(true); RefreshCharacter(); break;
-                case 6: Quit(); break;
+                case 6: FirstGame.Net.NetSession.Pending = true; GameManager.LoadScene(SceneNames.CombatArena); break;
+                case 7: Quit(); break;
                 default: break;
             }
         }

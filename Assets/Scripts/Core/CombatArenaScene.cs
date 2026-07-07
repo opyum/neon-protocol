@@ -13,6 +13,15 @@ namespace FirstGame.Core
             Env.SetupStylized(fog: true);
             BuildArena();
 
+            // Multiplayer (Phase 1): build a networked lobby over the arena instead of the local flow.
+            if (FirstGame.Net.NetSession.Pending)
+            {
+                FirstGame.Net.NetSession.Pending = false;
+                FirstGame.Net.NetSession.Start();
+                Time.timeScale = 1f;
+                return;
+            }
+
             var rig = PlayerRig.Build(new Vector3(0, 0.1f, -18f), Quaternion.identity);
             new GameObject("[PauseMenu]").AddComponent<FirstGame.UI.PauseMenu>();
 
