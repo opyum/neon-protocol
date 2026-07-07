@@ -42,6 +42,9 @@ namespace FirstGame.Core
             hud.weapon = rig.weapon;
             hud.abilities = rig.abilities;
 
+            KillFeed.Init(rig.weapon);
+            DamageNumbers.Init(rig.weapon, rig.abilities);
+
             var tutCanvas = UIFactory.CreateCanvas("CombatBanner", 5);
             var ui = tutCanvas.gameObject.AddComponent<TutorialUI>();
 

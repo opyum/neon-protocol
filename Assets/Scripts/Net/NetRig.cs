@@ -40,6 +40,9 @@ namespace FirstGame.Net
                 hud.weapon = rig.weapon;
                 hud.abilities = rig.abilities;
 
+                KillFeed.Init(rig.weapon);
+                DamageNumbers.Init(rig.weapon, rig.abilities);
+
                 new GameObject("[PauseMenu]").AddComponent<PauseMenu>();
                 new GameObject("[Scoreboard]").AddComponent<NetScoreboard>();
 
