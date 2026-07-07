@@ -68,6 +68,7 @@ namespace FirstGame.Core
         {
             if (new Vector2(x, z - 18f).sqrMagnitude < 49f) return true;   // objective zone
             if (new Vector2(x, z + 18f).sqrMagnitude < 36f) return true;   // player spawn
+            if (z > 30f) return true;                                      // bot spawn band (far end)
             if (Mathf.Abs(x) < 3.5f) return true;                          // central N-S corridor (guaranteed path)
             if (Mathf.Abs(z - 10f) < 3.5f) return true;                    // central E-W corridor
             return false;
