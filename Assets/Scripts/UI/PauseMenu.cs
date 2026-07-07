@@ -84,7 +84,13 @@ namespace FirstGame.UI
             MenuBtn(_mainPanel.transform, -10, "OPTIONS", ArtPalette.Cover, ArtPalette.UiText,
                 () => { _mainPanel.SetActive(false); _optionsPanel.SetActive(true); RefreshOptions(); });
             MenuBtn(_mainPanel.transform, -90, "MENU PRINCIPAL", ArtPalette.Cover, ArtPalette.UiText,
-                () => { Time.timeScale = 1f; GameManager.LoadScene(SceneNames.MainMenu); });
+                () =>
+                {
+                    Time.timeScale = 1f;
+                    var nm = Unity.Netcode.NetworkManager.Singleton;
+                    if (nm != null && nm.IsListening) nm.Shutdown();
+                    GameManager.LoadScene(SceneNames.MainMenu);
+                });
             MenuBtn(_mainPanel.transform, -170, "QUITTER", ArtPalette.Enemy, ArtPalette.UiInk, Quit);
 
             BuildOptions();

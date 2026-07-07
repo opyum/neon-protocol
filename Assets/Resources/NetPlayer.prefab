@@ -12,7 +12,8 @@ GameObject:
   - component: {fileID: 5280676137418319044}
   - component: {fileID: 1403495014116626245}
   - component: {fileID: 893958794791955141}
-  - component: {fileID: 6191314108563178687}
+  - component: {fileID: 6397919773915362037}
+  - component: {fileID: 7846892762790028503}
   m_Layer: 0
   m_Name: NetPlayer
   m_TagString: Untagged
@@ -133,7 +134,7 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
---- !u!114 &6191314108563178687
+--- !u!114 &6397919773915362037
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -142,10 +143,38 @@ MonoBehaviour:
   m_GameObject: {fileID: 1017095483801073120}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1c9c4dea25d3fd649b5319403020425a, type: 3}
+  m_Script: {fileID: 11500000, guid: 4fb031754b44c5740b411ecb45a1697c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FirstGame.Net.NetPlayer
+  m_EditorClassIdentifier: Assembly-CSharp::FirstGame.Net.NetRig
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &7846892762790028503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1017095483801073120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d8eb307e4fc9ba49ae9329febdc7591, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FirstGame.Net.NetDamageRelay
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetHp:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 100
+  Kills:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  Deaths:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
 --- !u!1 &5064255433014180979
 GameObject:
   m_ObjectHideFlags: 0

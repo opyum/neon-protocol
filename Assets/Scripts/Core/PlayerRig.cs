@@ -25,16 +25,24 @@ namespace FirstGame.Core
 
         public static Refs Build(Vector3 spawnPos, Quaternion spawnRot)
         {
-            var r = new Refs();
-
             var player = new GameObject("Player") { layer = IgnoreRaycast };
             player.transform.SetPositionAndRotation(spawnPos, spawnRot);
-            r.player = player;
 
             var cc = player.AddComponent<CharacterController>();
             cc.height = 1.8f;
             cc.radius = 0.4f;
             cc.center = new Vector3(0, 0.9f, 0);
+
+            return Assemble(player, cc);
+        }
+
+        /// <summary>Adds the full first-person rig to an existing GameObject that already has a
+        /// CharacterController (used both by Build and by the networked player).</summary>
+        public static Refs Assemble(GameObject player, CharacterController cc)
+        {
+            var r = new Refs();
+            r.player = player;
+            player.layer = IgnoreRaycast;
 
             r.controller = player.AddComponent<FirstPersonController>();
 

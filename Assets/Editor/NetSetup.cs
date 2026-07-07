@@ -18,7 +18,8 @@ public static class NetSetup
         cc.height = 1.8f; cc.radius = 0.4f; cc.center = new Vector3(0, 0.9f, 0);
         root.AddComponent<NetworkObject>();
         root.AddComponent<ClientNetworkTransform>();
-        root.AddComponent<NetPlayer>();
+        root.AddComponent<NetRig>();
+        root.AddComponent<NetDamageRelay>();
 
         var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         body.name = "Body";
