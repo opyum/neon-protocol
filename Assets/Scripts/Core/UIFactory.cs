@@ -77,6 +77,7 @@ namespace FirstGame.Core
         public static Button Button(Transform parent, string label, Color bg, Color fg, Action onClick, int fontSize = 30)
         {
             var rt = AddChild(parent, "Button_" + label);
+            Stretch(rt); // fill the parent slot so the background matches the intended button size
             var img = rt.gameObject.AddComponent<Image>();
             img.color = bg;
             var btn = rt.gameObject.AddComponent<Button>();
@@ -96,10 +97,10 @@ namespace FirstGame.Core
             trigger.triggers.Add(enter);
 
             var txt = Label(rt, label, fontSize, fg);
-            Stretch(txt.rectTransform, 6);
+            Stretch(txt.rectTransform, 8);
             txt.alignment = TextAnchor.MiddleCenter;
-            txt.horizontalOverflow = HorizontalWrapMode.Overflow;
-            txt.resizeTextForBestFit = true;   // shrink to fit the button so labels never truncate
+            txt.horizontalOverflow = HorizontalWrapMode.Wrap; // Wrap lets best-fit constrain width
+            txt.resizeTextForBestFit = true;                  // shrink to fit so labels never truncate
             txt.resizeTextMinSize = 8;
             txt.resizeTextMaxSize = fontSize;
             return btn;
