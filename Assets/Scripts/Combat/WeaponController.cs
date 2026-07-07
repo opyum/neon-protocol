@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using FirstGame.Core;
 using FirstGame.Enemies;
@@ -150,6 +151,7 @@ namespace FirstGame.Combat
             // Dispersion cone: reduced by the Contrôle stat and by aiming down sights.
             bool aiming = Keybinds.Held(GameAction.Aim);
             float spread = baseSpreadDeg * PlayerProfile.Current.SpreadMultiplier * (aiming ? 0.35f : 1f);
+            if (weapon.deployable && _fpc != null && _fpc.CurrentSpeed > 1.5f) spread *= 3.5f; // heavy: deploy (stand still)
             Vector3 dir = cam.transform.forward;
             if (spread > 0.01f)
                 dir = Quaternion.AngleAxis(UnityEngine.Random.Range(-spread, spread), cam.transform.up)
@@ -162,9 +164,15 @@ namespace FirstGame.Combat
             Vector3 end = ray.origin + ray.direction * weapon.range;
             Vfx.Muzzle(muzzle != null ? muzzle.position : ray.origin + ray.direction * 0.5f, ray.direction, ArtPalette.NeonCyan);
 
-            if (Physics.Raycast(ray, out var hit, weapon.range, hitMask, QueryTriggerInteraction.Ignore))
+            bool didHit = Physics.Raycast(ray, out var hit, weapon.range, hitMask, QueryTriggerInteraction.Ignore);
+            if (didHit) end = hit.point;
+
+            if (weapon.aoeRadius > 0f)
             {
-                end = hit.point;
+                Explode(end); // rocket: splash at the impact (or max range)
+            }
+            else if (didHit)
+            {
                 Vfx.Impact(hit.point, ArtPalette.NeonCyan);
                 var head = hit.collider.GetComponent<HeadHitbox>();
                 var target = hit.collider.GetComponentInParent<IDamageable>();
@@ -179,6 +187,23 @@ namespace FirstGame.Combat
             }
 
             Tracer(tracerStart, end);
+        }
+
+        void Explode(Vector3 center)
+        {
+            Vfx.Explosion(center, ArtPalette.Enemy);
+            float mul = PlayerProfile.Current.DamageMultiplier * passiveDamageMul;
+            var seen = new HashSet<IDamageable>();
+            foreach (var col in Physics.OverlapSphere(center, weapon.aoeRadius, hitMask, QueryTriggerInteraction.Ignore))
+            {
+                var d = col.GetComponentInParent<IDamageable>();
+                if (d != null && d.IsAlive && seen.Add(d))
+                {
+                    float dealt = d.TakeDamage(weapon.aoeDamage * mul, col.transform.position, Vector3.zero);
+                    OnHit?.Invoke(d, dealt, false);
+                    if (!d.IsAlive) OnKill?.Invoke(false);
+                }
+            }
         }
 
         void Tracer(Vector3 a, Vector3 b)
