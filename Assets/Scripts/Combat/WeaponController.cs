@@ -169,7 +169,7 @@ namespace FirstGame.Combat
                 if (target != null && target.IsAlive)
                 {
                     bool headshot = head != null;
-                    float damage = weapon.damage * (headshot ? weapon.headshotMultiplier : 1f);
+                    float damage = weapon.damage * (headshot ? weapon.headshotMultiplier : 1f) * PlayerProfile.Current.DamageMultiplier;
                     float dealt = target.TakeDamage(damage, hit.point, hit.normal);
                     OnHit?.Invoke(target, dealt, headshot);
                     if (!target.IsAlive) OnKill?.Invoke(headshot);

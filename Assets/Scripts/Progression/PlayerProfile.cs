@@ -4,74 +4,69 @@ using UnityEngine;
 namespace FirstGame.Progression
 {
     /// <summary>
-    /// Persistent player character: level, XP and the 6 stats from the GDD.
-    /// Design: "progression = options, not raw power" — stats are capped, respec is free.
+    /// Persistent RPG character: infinite levels, 5 stats, and a build of 3 active + 3 passive skills.
     /// Saved to PlayerPrefs as JSON.
     /// </summary>
     [Serializable]
     public class PlayerProfile
     {
-        public const int MaxLevel = 30;
-        public const int PointsPerLevel = 2;
-        public const int StatCap = 20; // max points investable in a single stat
+        public const int PointsPerLevel = 3;
 
         public int level = 1;
         public int xp = 0;
         public int unspentPoints = 0;
 
-        // Chosen loadout (weapon id + 3 ability ids). Resolved via the catalogs.
+        // ---- Loadout ----
         public string weaponId = "wpn_fusil_rempart";          // primary
         public string secondaryWeaponId = "wpn_pistolet_eclat"; // secondary (switch in-game)
-        public string ability0 = "trait_de_feu";
+        public string ability0 = "trait_de_feu";   // active skill slots (E / F / C)
         public string ability1 = "decharge_foudre";
         public string ability2 = "bouclier_de_lumiere";
-        public string equipmentId = "equip_armure_legere"; // armour slot
-        public string utilityId = "equip_fumigene";        // utility slot (key G)
-        public string agentId = "agent_brasier";           // chosen agent (fixes the 3 abilities)
+        public string passive0 = "";                // passive skill slots
+        public string passive1 = "";
+        public string passive2 = "";
+        public string equipmentId = "equip_armure_legere";
+        public string utilityId = "equip_fumigene";
+        public string agentId = "agent_brasier";    // class (passive identity)
 
-        // Ranked (ELO) — updated by the "Classé contre bots" mode, reused later by PvP.
+        // Ranked (ELO)
         public int elo = 1000;
         public int rankedGames = 0;
         public int rankedWins = 0;
 
-        // Invested stat points (see GDD)
-        public int vitalite = 0;      // +6 HP / pt
-        public int celerite = 0;      // +1.5% move speed / pt (cap +25%)
-        public int controle = 0;      // -2.5% weapon spread / pt (recoil system: phase 2)
-        public int focalisation = 0;  // -2% ability cooldown / pt (cap -40%)
-        public int amplification = 0; // +3% ability power / pt (cap +60%)
-        public int regeneration = 0;  // +0.5 HP/s out-of-combat regen / pt
+        // ---- Stats (RPG, no cap — invest freely) ----
+        public int force = 0;        // +2% weapon & ability damage / pt
+        public int endurance = 0;    // +8 max HP / pt (+ out-of-combat regen)
+        public int defense = 0;      // damage reduction (soft-capped)
+        public int intelligence = 0; // -1.5% ability cooldown / pt + ability power
+        public int vitesse = 0;      // +1.2% move speed / pt
 
-        // ---- XP curve: XP(n->n+1) = round(100 * 1.15^(n-1), nearest 10) ----
-        public int XpForNext => level >= MaxLevel ? int.MaxValue
-            : Mathf.RoundToInt(100f * Mathf.Pow(1.15f, level - 1) / 10f) * 10;
+        // ---- XP curve (infinite levels; capped growth to avoid overflow) ----
+        public int XpForNext => Mathf.Min(250000, Mathf.RoundToInt(80f * Mathf.Pow(1.12f, level - 1) / 10f) * 10);
 
         public void AddXp(int amount)
         {
             if (amount <= 0) return;
             xp += amount;
-            while (level < MaxLevel && xp >= XpForNext)
+            while (xp >= XpForNext)
             {
                 xp -= XpForNext;
                 level++;
                 unspentPoints += PointsPerLevel;
             }
-            if (level >= MaxLevel) xp = 0;
             Save();
         }
 
         public bool Spend(string stat)
         {
             if (unspentPoints <= 0) return false;
-            if (StatValue(stat) >= StatCap) return false;
             switch (stat)
             {
-                case "vitalite": vitalite++; break;
-                case "celerite": celerite++; break;
-                case "controle": controle++; break;
-                case "focalisation": focalisation++; break;
-                case "amplification": amplification++; break;
-                case "regeneration": regeneration++; break;
+                case "force": force++; break;
+                case "endurance": endurance++; break;
+                case "defense": defense++; break;
+                case "intelligence": intelligence++; break;
+                case "vitesse": vitesse++; break;
                 default: return false;
             }
             unspentPoints--;
@@ -81,26 +76,25 @@ namespace FirstGame.Progression
 
         public int StatValue(string stat) => stat switch
         {
-            "vitalite" => vitalite,
-            "celerite" => celerite,
-            "controle" => controle,
-            "focalisation" => focalisation,
-            "amplification" => amplification,
-            "regeneration" => regeneration,
+            "force" => force,
+            "endurance" => endurance,
+            "defense" => defense,
+            "intelligence" => intelligence,
+            "vitesse" => vitesse,
             _ => 0
         };
 
-        // ---- Loadout ----
-        public string GetAbility(int slot) => slot switch { 0 => ability0, 1 => ability1, 2 => ability2, _ => ability0 };
-
-        void SetAbilityRaw(int slot, string id)
+        public void Respec()
         {
-            if (slot == 0) ability0 = id;
-            else if (slot == 1) ability1 = id;
-            else ability2 = id;
+            unspentPoints += force + endurance + defense + intelligence + vitesse;
+            force = endurance = defense = intelligence = vitesse = 0;
+            Save();
         }
 
-        /// <summary>Equip an ability in a slot, swapping it out of any other slot to keep 3 distinct.</summary>
+        // ---- Loadout accessors ----
+        public string GetAbility(int slot) => slot switch { 0 => ability0, 1 => ability1, 2 => ability2, _ => ability0 };
+        void SetAbilityRaw(int slot, string id) { if (slot == 0) ability0 = id; else if (slot == 1) ability1 = id; else ability2 = id; }
+
         public void SetAbility(int slot, string id)
         {
             for (int i = 0; i < 3; i++)
@@ -109,16 +103,23 @@ namespace FirstGame.Progression
             Save();
         }
 
+        public string GetPassive(int slot) => slot switch { 0 => passive0, 1 => passive1, 2 => passive2, _ => passive0 };
+        void SetPassiveRaw(int slot, string id) { if (slot == 0) passive0 = id; else if (slot == 1) passive1 = id; else passive2 = id; }
+
+        public void SetPassive(int slot, string id)
+        {
+            for (int i = 0; i < 3; i++)
+                if (i != slot && GetPassive(i) == id && !string.IsNullOrEmpty(id)) SetPassiveRaw(i, GetPassive(slot));
+            SetPassiveRaw(slot, id);
+            Save();
+        }
+
         public void SetWeapon(string id) { weaponId = id; Save(); }
         public void SetSecondaryWeapon(string id) { secondaryWeaponId = id; Save(); }
         public void SetEquipment(string id) { equipmentId = id; Save(); }
         public void SetUtility(string id) { utilityId = id; Save(); }
-
-        /// <summary>Pick a class/character — gives its passive only. Spells are chosen freely
-        /// (SetAbility), so the character no longer locks the 3 abilities.</summary>
         public void SetAgent(string id) { agentId = id; Save(); }
 
-        /// <summary>Fill the 3 spell slots from an agent's suggested loadout (a preset button).</summary>
         public void ApplyAgentPreset(string id)
         {
             var a = FirstGame.Agents.AgentCatalog.ById(id);
@@ -126,25 +127,18 @@ namespace FirstGame.Progression
             Save();
         }
 
-        /// <summary>Refund every invested point (free respec between matches).</summary>
-        public void Respec()
-        {
-            unspentPoints += vitalite + celerite + controle + focalisation + amplification + regeneration;
-            vitalite = celerite = controle = focalisation = amplification = regeneration = 0;
-            Save();
-        }
+        // ---- Derived combat values (names kept stable for the rest of the codebase) ----
+        public float DamageMultiplier => 1f + force * 0.02f;
+        public float MaxHealth => 100f + endurance * 8f;
+        public float RegenPerSecond => endurance * 0.35f;
+        public float DamageReduction => (defense * 5f) / (100f + defense * 5f); // soft cap: 50% at 20 pts
+        public float CooldownMultiplier => Mathf.Max(0.35f, 1f - intelligence * 0.015f);
+        public float AbilityPowerMultiplier => 1f + intelligence * 0.02f + force * 0.01f;
+        public float MoveSpeedMultiplier => 1f + vitesse * 0.012f;
+        public float SpreadMultiplier => 1f; // spread/recoil now handled per weapon
 
-        // ---- Derived combat values ----
-        public float MaxHealth => 100f + vitalite * 6f;
-        public float MoveSpeedMultiplier => 1f + Mathf.Min(celerite, StatCap) * 0.015f; // cap +25% approx (@~17pts)
-        public float SpreadMultiplier => Mathf.Max(0.5f, 1f - controle * 0.025f);
-        public float CooldownMultiplier => Mathf.Max(0.6f, 1f - focalisation * 0.02f);     // cap -40%
-        public float AbilityPowerMultiplier => 1f + Mathf.Min(amplification, StatCap) * 0.03f; // cap +60%
-        public float RegenPerSecond => regeneration * 0.5f;
-
-        // Ranked tier from ELO (FR names). This is the real competitive rank.
+        // ---- Rank (ELO) ----
         public string Rank => RankedTier;
-
         public string RankedTier
         {
             get
@@ -161,8 +155,6 @@ namespace FirstGame.Progression
             }
         }
 
-        /// <summary>ELO update. K=40 during placement (10 games), then 24, then 16 at 2100+.
-        /// Returns the point delta (signed).</summary>
         public int ApplyMatchResult(bool win, int opponentRating)
         {
             int k = rankedGames < 10 ? 40 : (elo < 2100 ? 24 : 16);
@@ -177,7 +169,7 @@ namespace FirstGame.Progression
         }
 
         // ---- Persistence ----
-        const string Key = "firstgame.profile.v1";
+        const string Key = "firstgame.profile.v2";
         static PlayerProfile _current;
         public static PlayerProfile Current => _current ??= Load();
 
@@ -185,26 +177,14 @@ namespace FirstGame.Progression
         {
             if (PlayerPrefs.HasKey(Key))
             {
-                try
-                {
-                    var p = JsonUtility.FromJson<PlayerProfile>(PlayerPrefs.GetString(Key));
-                    if (p != null) return p;
-                }
-                catch { /* corrupt save -> fresh profile */ }
+                try { var p = JsonUtility.FromJson<PlayerProfile>(PlayerPrefs.GetString(Key)); if (p != null) return p; }
+                catch { /* corrupt -> fresh */ }
             }
             return new PlayerProfile();
         }
 
-        public void Save()
-        {
-            PlayerPrefs.SetString(Key, JsonUtility.ToJson(this));
-            PlayerPrefs.Save();
-        }
+        public void Save() { PlayerPrefs.SetString(Key, JsonUtility.ToJson(this)); PlayerPrefs.Save(); }
 
-        public static void ResetProfile()
-        {
-            _current = new PlayerProfile();
-            _current.Save();
-        }
+        public static void ResetProfile() { _current = new PlayerProfile(); _current.Save(); }
     }
 }

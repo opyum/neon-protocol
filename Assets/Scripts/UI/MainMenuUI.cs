@@ -35,12 +35,11 @@ namespace FirstGame.UI
 
         static readonly (string id, string name, string effect)[] Stats =
         {
-            ("vitalite",     "VITALITÉ",      "+6 PV par point"),
-            ("celerite",     "CÉLÉRITÉ",      "+1,5% vitesse par point"),
-            ("controle",     "CONTRÔLE",      "-2,5% dispersion par point"),
-            ("focalisation", "FOCALISATION",  "-2% recharge sorts par point"),
-            ("amplification","AMPLIFICATION", "+3% puissance des sorts par point"),
-            ("regeneration", "RÉGÉNÉRATION",  "+0,5 PV/s régén. hors combat"),
+            ("force",        "FORCE",        "+2% dégâts (armes & sorts) / pt"),
+            ("endurance",    "ENDURANCE",    "+8 PV max & régén / pt"),
+            ("defense",      "DÉFENSE",      "réduction de dégâts / pt"),
+            ("intelligence", "INTELLIGENCE", "-1,5% recharge & +puissance sorts / pt"),
+            ("vitesse",      "VITESSE",      "+1,2% vitesse de déplacement / pt"),
         };
 
         void Start() => BuildMenu();
@@ -299,7 +298,7 @@ namespace FirstGame.UI
             _pointsText.text = p.unspentPoints > 0
                 ? $"POINTS À DISTRIBUER : {p.unspentPoints}"
                 : "Aucun point disponible — gagne des niveaux en jouant.";
-            _xpText.text = $"Niveau {p.level} / {PlayerProfile.MaxLevel}   —   XP {p.xp} / {(p.XpForNext == int.MaxValue ? "MAX" : p.XpForNext.ToString())}   —   Palier {p.Rank}";
+            _xpText.text = $"Niveau {p.level}   —   XP {p.xp} / {p.XpForNext}   —   Palier {p.Rank}";
             RefreshLevelChip();
         }
 

@@ -57,6 +57,7 @@ namespace FirstGame.Player
             if (!IsAlive) return 0f;
             _lastDamageTime = Time.time;
 
+            amount *= 1f - PlayerProfile.Current.DamageReduction; // Défense stat
             float remaining = amount;
             if (Shield > 0f)
             {
