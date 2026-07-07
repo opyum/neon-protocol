@@ -96,7 +96,12 @@ namespace FirstGame.Core
             trigger.triggers.Add(enter);
 
             var txt = Label(rt, label, fontSize, fg);
-            Stretch(txt.rectTransform, 4);
+            Stretch(txt.rectTransform, 6);
+            txt.alignment = TextAnchor.MiddleCenter;
+            txt.horizontalOverflow = HorizontalWrapMode.Overflow;
+            txt.resizeTextForBestFit = true;   // shrink to fit the button so labels never truncate
+            txt.resizeTextMinSize = 8;
+            txt.resizeTextMaxSize = fontSize;
             return btn;
         }
 
