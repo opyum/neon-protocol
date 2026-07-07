@@ -60,3 +60,7 @@ sysinfo.txt
 /Assets/Sci-Fi Styled Modular Pack.meta
 /Assets/Creepy_Cat/
 /Assets/Creepy_Cat.meta
+
+# Personal / non-game files that must never reach the public repo
+*.pdf
+INVOICE-*
