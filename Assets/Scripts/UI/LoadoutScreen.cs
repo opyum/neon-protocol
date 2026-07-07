@@ -220,6 +220,8 @@ namespace FirstGame.UI
             if (abilities != null) abilities.ReloadLoadout();
             var weapon = FindAnyObjectByType<WeaponController>();
             if (weapon != null) weapon.SetLoadout(WeaponCatalog.ById(_primaryId), WeaponCatalog.ById(_secondaryId));
+            var passives = FindAnyObjectByType<PassiveSystem>();
+            if (passives != null) passives.Reapply(); // apply the chosen passives live
 
             if (_canvasGo != null) Destroy(_canvasGo);
             _onReady?.Invoke();

@@ -88,12 +88,16 @@ namespace FirstGame.Player
             OnShieldChanged?.Invoke(Shield);
         }
 
-        /// <summary>Apply passive-skill bonuses (extra max HP, out-of-combat regen, damage reduction).</summary>
+        float _passiveHp, _passiveRegen;
+
+        /// <summary>Apply passive-skill bonuses (idempotent — replaces the previous contribution so it
+        /// can be re-applied when the build changes mid-match).</summary>
         public void ApplyPassives(float bonusHp, float bonusRegen, float bonusReduction)
         {
-            MaxHealth += bonusHp;
-            Health += bonusHp;
-            _regenPerSecond += bonusRegen;
+            MaxHealth += bonusHp - _passiveHp;
+            Health = Mathf.Min(MaxHealth, Mathf.Max(1f, Health + (bonusHp - _passiveHp)));
+            _regenPerSecond += bonusRegen - _passiveRegen;
+            _passiveHp = bonusHp; _passiveRegen = bonusRegen;
             _bonusReduction = Mathf.Clamp01(bonusReduction);
             OnHealthChanged?.Invoke(Health, MaxHealth);
         }
