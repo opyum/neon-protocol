@@ -2,82 +2,148 @@ using UnityEngine;
 
 namespace FirstGame.Core
 {
-    /// <summary>Procedural labyrinth-style interior for the combat arena. Seeded, so each map index
-    /// is a distinct-but-deterministic layout: scattered wall segments (corridors), pillars and crates,
-    /// with the spawn/objective areas kept clear for balance.</summary>
+    /// <summary>Designed arena generator: a connected maze of rooms (recursive backtracker) linked by
+    /// doorways/chokepoints, with cover props for hiding + strategy. Uses the real modular sci-fi
+    /// prefabs when available (GameAssets.Prop), else textured primitive fallbacks. Seeded per (mode, map).</summary>
     public static class MapGen
     {
-        // Playable footprint (matches the arena floor centred ~ (0, 10)).
         const float CenterZ = 10f;
-        const int Cells = 7;
-        const float Cell = 8f;
+        const int N = 5;                 // grid cells per side
+        const float Cell = 11f;
+        static float MinX => -N * Cell * 0.5f;
+        static float MinZ => CenterZ - N * Cell * 0.5f;
+
+        static readonly string[] CoverKeys = { "container_big", "container_small", "crate_hd", "half_wall", "storage_big" };
 
         public static void Build(Transform arena, int seed)
         {
-            var rng = new System.Random(seed * 9973 + 12345);
-            var mat = Surfaces.Metal;
-            float half = Cells * Cell * 0.5f;
-            const float wallH = 3.2f, wallT = 0.6f;
+            var rng = new System.Random(seed * 733 + 97);
 
-            // Vertical wall segments (between columns).
-            for (int gx = 1; gx < Cells; gx++)
-                for (int gz = 0; gz < Cells; gz++)
-                {
-                    if (rng.NextDouble() > 0.30) continue;
-                    float x = -half + gx * Cell;
-                    float z = CenterZ - half + (gz + 0.5f) * Cell;
-                    if (Clear(x, z)) continue;
-                    Wall(arena, new Vector3(x, wallH * 0.5f, z), new Vector3(wallT, wallH, Cell * 0.9f), mat);
-                }
+            // ---- Carve a connected maze (recursive backtracker) ----
+            bool[,] wallE = new bool[N, N]; // wall on the EAST edge of cell (x,z)
+            bool[,] wallN = new bool[N, N]; // wall on the NORTH edge of cell (x,z)
+            for (int x = 0; x < N; x++) for (int z = 0; z < N; z++) { wallE[x, z] = true; wallN[x, z] = true; }
 
-            // Horizontal wall segments (between rows).
-            for (int gz = 1; gz < Cells; gz++)
-                for (int gx = 0; gx < Cells; gx++)
-                {
-                    if (rng.NextDouble() > 0.30) continue;
-                    float z = CenterZ - half + gz * Cell;
-                    float x = -half + (gx + 0.5f) * Cell;
-                    if (Clear(x, z)) continue;
-                    Wall(arena, new Vector3(x, wallH * 0.5f, z), new Vector3(Cell * 0.9f, wallH, wallT), mat);
-                }
-
-            // Pillars at some grid intersections.
-            for (int gx = 1; gx < Cells; gx++)
-                for (int gz = 1; gz < Cells; gz++)
-                {
-                    if (rng.NextDouble() > 0.16) continue;
-                    float x = -half + gx * Cell, z = CenterZ - half + gz * Cell;
-                    if (Clear(x, z)) continue;
-                    Wall(arena, new Vector3(x, 1.8f, z), new Vector3(1.2f, 3.6f, 1.2f), mat);
-                }
-
-            // Scattered crates (chest-high cover).
-            int crates = 10 + rng.Next(0, 8);
-            for (int i = 0; i < crates; i++)
+            bool[,] vis = new bool[N, N];
+            var stack = new System.Collections.Generic.Stack<Vector2Int>();
+            vis[0, 0] = true; stack.Push(new Vector2Int(0, 0));
+            while (stack.Count > 0)
             {
-                float x = (float)(rng.NextDouble() * 2 - 1) * (half - 3f);
-                float z = CenterZ + (float)(rng.NextDouble() * 2 - 1) * (half - 3f);
-                if (Clear(x, z)) continue;
-                var box = Prim.Box(arena, new Vector3(x, 0.75f, z), new Vector3(1.6f, 1.5f, 1.6f), ArtPalette.Cover, name: "Crate");
-                var r = box.GetComponent<Renderer>(); if (r) r.sharedMaterial = mat;
+                var c = stack.Peek();
+                var nbs = new System.Collections.Generic.List<int>(); // 0=E 1=W 2=N 3=S
+                if (c.x + 1 < N && !vis[c.x + 1, c.y]) nbs.Add(0);
+                if (c.x - 1 >= 0 && !vis[c.x - 1, c.y]) nbs.Add(1);
+                if (c.y + 1 < N && !vis[c.x, c.y + 1]) nbs.Add(2);
+                if (c.y - 1 >= 0 && !vis[c.x, c.y - 1]) nbs.Add(3);
+                if (nbs.Count == 0) { stack.Pop(); continue; }
+                int dir = nbs[rng.Next(nbs.Count)];
+                switch (dir)
+                {
+                    case 0: wallE[c.x, c.y] = false; vis[c.x + 1, c.y] = true; stack.Push(new Vector2Int(c.x + 1, c.y)); break;
+                    case 1: wallE[c.x - 1, c.y] = false; vis[c.x - 1, c.y] = true; stack.Push(new Vector2Int(c.x - 1, c.y)); break;
+                    case 2: wallN[c.x, c.y] = false; vis[c.x, c.y + 1] = true; stack.Push(new Vector2Int(c.x, c.y + 1)); break;
+                    case 3: wallN[c.x, c.y - 1] = false; vis[c.x, c.y - 1] = true; stack.Push(new Vector2Int(c.x, c.y - 1)); break;
+                }
+            }
+
+            // ---- Braid: open ~40% of remaining interior walls for loops/lanes (FPS flow, not a dead-end maze) ----
+            for (int x = 0; x < N; x++)
+                for (int z = 0; z < N; z++)
+                {
+                    if (x < N - 1 && wallE[x, z] && rng.NextDouble() < 0.4) wallE[x, z] = false;
+                    if (z < N - 1 && wallN[x, z] && rng.NextDouble() < 0.4) wallN[x, z] = false;
+                }
+
+            // ---- Render interior walls as spans with doorways (chokepoints) ----
+            for (int x = 0; x < N; x++)
+                for (int z = 0; z < N; z++)
+                {
+                    if (x < N - 1)
+                    {
+                        var center = new Vector3(MinX + (x + 1) * Cell, 0f, MinZ + (z + 0.5f) * Cell);
+                        RenderEdge(arena, wallE[x, z], center, Cell, alongX: false, rng);
+                    }
+                    if (z < N - 1)
+                    {
+                        var center = new Vector3(MinX + (x + 0.5f) * Cell, 0f, MinZ + (z + 1) * Cell);
+                        RenderEdge(arena, wallN[x, z], center, Cell, alongX: true, rng);
+                    }
+                }
+
+            // ---- Cover props inside cells (hiding spots + peek angles) ----
+            for (int x = 0; x < N; x++)
+                for (int z = 0; z < N; z++)
+                {
+                    var cc = new Vector3(MinX + (x + 0.5f) * Cell, 0f, MinZ + (z + 0.5f) * Cell);
+                    if (SpawnZone(cc)) continue;           // keep spawns open
+                    bool site = ObjectiveZone(cc);
+                    int pieces = site ? 3 : 1 + rng.Next(0, 2); // sites = strategic, heavier cover
+                    for (int i = 0; i < pieces; i++)
+                    {
+                        var off = new Vector3((float)(rng.NextDouble() * 2 - 1) * 3.2f, 0f, (float)(rng.NextDouble() * 2 - 1) * 3.2f);
+                        Cover(arena, cc + off, rng);
+                    }
+                }
+        }
+
+        static bool SpawnZone(Vector3 p) =>
+            new Vector2(p.x, p.z + 18f).sqrMagnitude < 40f || p.z > 30f; // player spawn + bot spawn band
+
+        static bool ObjectiveZone(Vector3 p) => new Vector2(p.x, p.z - 18f).sqrMagnitude < 64f;
+
+        // ---- Rendering ----
+        static void RenderEdge(Transform arena, bool hasWall, Vector3 center, float len, bool alongX, System.Random rng)
+        {
+            if (hasWall) { PlaceSpan(arena, center, len, alongX); return; }
+            const float gap = 4.4f; // doorway / chokepoint
+            if (len <= gap + 1.5f) return;
+            float side = (len - gap) * 0.5f;
+            var dir = alongX ? Vector3.right : Vector3.forward;
+            PlaceSpan(arena, center - dir * (gap * 0.5f + side * 0.5f), side, alongX);
+            PlaceSpan(arena, center + dir * (gap * 0.5f + side * 0.5f), side, alongX);
+        }
+
+        static void PlaceSpan(Transform arena, Vector3 groundCenter, float len, bool alongX)
+        {
+            if (len < 0.6f) return;
+            var ga = GameAssets.Instance;
+            var prefab = ga != null ? ga.Prop("wall_tall") : null;
+            if (prefab != null)
+            {
+                int segs = Mathf.Max(1, Mathf.RoundToInt(len / 3.2f));
+                var dir = alongX ? Vector3.right : Vector3.forward;
+                for (int i = 0; i < segs; i++)
+                {
+                    float t = (i + 0.5f) / segs - 0.5f;
+                    ModelUtil.SpawnProp(prefab, arena, groundCenter + dir * (len * t), alongX ? 0f : 90f, 3.4f, byHeight: true, material: null);
+                }
+            }
+            else
+            {
+                var size = alongX ? new Vector3(len, 3.2f, 0.6f) : new Vector3(0.6f, 3.2f, len);
+                var go = Prim.Box(arena, groundCenter + Vector3.up * 1.6f, size, ArtPalette.Wall, name: "Wall");
+                var r = go.GetComponent<Renderer>(); if (r) r.sharedMaterial = Surfaces.Metal;
             }
         }
 
-        // Keep the objective, spawns and a central corridor clear so a path always exists.
-        static bool Clear(float x, float z)
+        static void Cover(Transform arena, Vector3 pos, System.Random rng)
         {
-            if (new Vector2(x, z - 18f).sqrMagnitude < 49f) return true;   // objective zone
-            if (new Vector2(x, z + 18f).sqrMagnitude < 36f) return true;   // player spawn
-            if (z > 30f) return true;                                      // bot spawn band (far end)
-            if (Mathf.Abs(x) < 3.5f) return true;                          // central N-S corridor (guaranteed path)
-            if (Mathf.Abs(z - 10f) < 3.5f) return true;                    // central E-W corridor
-            return false;
-        }
-
-        static void Wall(Transform arena, Vector3 pos, Vector3 size, Material mat)
-        {
-            var go = Prim.Box(arena, pos, size, ArtPalette.Wall, name: "MazeWall");
-            var r = go.GetComponent<Renderer>(); if (r) r.sharedMaterial = mat;
+            var ga = GameAssets.Instance;
+            string key = CoverKeys[rng.Next(CoverKeys.Length)];
+            var prefab = ga != null ? ga.Prop(key) : null;
+            if (prefab != null)
+            {
+                float size = key == "half_wall" ? 1.3f : key == "crate_hd" ? 1.5f : 2.4f;
+                bool byH = key == "half_wall";
+                ModelUtil.SpawnProp(prefab, arena, pos, rng.Next(0, 4) * 90f, size, byHeight: byH, material: null);
+            }
+            else
+            {
+                bool low = rng.Next(2) == 0;
+                var size = low ? new Vector3(2.2f, 1.2f, 0.7f) : new Vector3(1.7f, 1.6f, 1.7f);
+                var go = Prim.Box(arena, pos + Vector3.up * size.y * 0.5f, size, ArtPalette.Cover, name: "Cover");
+                var r = go.GetComponent<Renderer>(); if (r) r.sharedMaterial = Surfaces.Metal;
+            }
         }
     }
 }
