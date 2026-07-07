@@ -26,8 +26,12 @@ namespace FirstGame.Player
 
         CharacterController _cc;
         float _pitch;
+        float _recoil; // upward view kick from firing, recovers over time
         Vector3 _velocity;
         float _speedMul = 1f;
+
+        /// <summary>Adds an upward recoil kick (degrees) to the view; recovers automatically.</summary>
+        public void AddRecoil(float degrees) => _recoil += degrees;
 
         // Temporary speed buff (e.g. Brasier — Élan Ardent: +12% for 3s after a kill).
         float _buffMul = 1f;
@@ -88,7 +92,8 @@ namespace FirstGame.Player
 
             transform.Rotate(Vector3.up, mx);
             _pitch = Mathf.Clamp(_pitch - my, -89f, 89f);
-            if (cameraPivot) cameraPivot.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
+            _recoil = Mathf.MoveTowards(_recoil, 0f, 14f * Time.deltaTime); // recover recoil
+            if (cameraPivot) cameraPivot.localRotation = Quaternion.Euler(_pitch - _recoil, 0f, 0f);
         }
 
         void ApplyFov(bool aiming)

@@ -2,6 +2,8 @@ using System;
 using UnityEngine;
 using FirstGame.Core;
 using FirstGame.Enemies;
+using FirstGame.Player;
+using FirstGame.Progression;
 
 namespace FirstGame.Combat
 {
@@ -28,9 +30,13 @@ namespace FirstGame.Combat
         public event Action OnWeaponChanged;
         public event Action<bool> OnKill;                    // (wasHeadshot) a shot killed the target
 
+        public float baseSpreadDeg = 1.6f; // hip-fire cone at Contrôle 0; reduced by the stat + ADS
+        FirstPersonController _fpc;
+
         void Awake()
         {
             Ammo = weapon.magazineSize;
+            _fpc = GetComponent<FirstPersonController>();
         }
 
         void Start() => OnAmmoChanged?.Invoke(Ammo, weapon.magazineSize);
@@ -93,7 +99,17 @@ namespace FirstGame.Combat
             var cam = aimCamera != null ? aimCamera : Camera.main;
             if (cam == null) return;
 
-            Ray ray = new Ray(cam.transform.position, cam.transform.forward);
+            // Dispersion cone: reduced by the Contrôle stat and by aiming down sights.
+            bool aiming = Keybinds.Held(GameAction.Aim);
+            float spread = baseSpreadDeg * PlayerProfile.Current.SpreadMultiplier * (aiming ? 0.35f : 1f);
+            Vector3 dir = cam.transform.forward;
+            if (spread > 0.01f)
+                dir = Quaternion.AngleAxis(UnityEngine.Random.Range(-spread, spread), cam.transform.up)
+                    * Quaternion.AngleAxis(UnityEngine.Random.Range(-spread, spread), cam.transform.right) * dir;
+
+            if (_fpc != null) _fpc.AddRecoil(aiming ? 0.35f : 0.6f); // upward view kick
+
+            Ray ray = new Ray(cam.transform.position, dir);
             Vector3 tracerStart = muzzle != null ? muzzle.position : ray.origin;
             Vector3 end = ray.origin + ray.direction * weapon.range;
             Vfx.Muzzle(muzzle != null ? muzzle.position : ray.origin + ray.direction * 0.5f, ray.direction, ArtPalette.NeonCyan);

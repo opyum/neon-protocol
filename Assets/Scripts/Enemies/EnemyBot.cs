@@ -209,7 +209,7 @@ namespace FirstGame.Enemies
             Tracer(Eye, AimPoint);
             if (_audio && ProceduralAudio.Shot) _audio.PlayOneShot(ProceduralAudio.Shot, 0.4f);
             float p = _cfg.accuracy * Mathf.Clamp01(1.25f - dist / _cfg.aggroRange);
-            if (UnityEngine.Random.value <= p) _targetHealth.TakeDamage(_cfg.damage, AimPoint, Vector3.zero);
+            if (UnityEngine.Random.value <= p) _targetHealth.TakeDamageFrom(_cfg.damage, Eye);
         }
 
         // Ennemi-agent: cast a non-hitscan spell toward the player. Robust when the player takes

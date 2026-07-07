@@ -26,6 +26,10 @@ namespace FirstGame.UI
         readonly Image[] _abilityFills = new Image[3];
         readonly Text[] _abilityCharges = new Text[3];
 
+        Image _reloadFill; GameObject _reloadGroup; Text _reloadPrompt;
+        bool _reloading; float _reloadStart, _reloadDur;
+        Image _dirIndicator; RectTransform _dirRt; float _dirAlpha;
+
         static readonly Color HpGreen = new Color(0.24f, 0.86f, 0.52f);
         static readonly Color HpYellow = new Color(0.96f, 0.78f, 0.22f);
         static readonly Color HpRed = new Color(0.92f, 0.26f, 0.30f);
@@ -46,15 +50,18 @@ namespace FirstGame.UI
                 weapon.OnHit += OnWeaponHit;
                 weapon.OnKill += OnKill;
                 weapon.OnWeaponChanged += OnWeaponChanged;
+                weapon.OnReloadStart += OnReloadStart;
+                weapon.OnReloadEnd += OnReloadEnd;
                 OnAmmo(weapon.Ammo, weapon.weapon.magazineSize);
                 OnWeaponChanged();
             }
+            if (playerHealth != null) playerHealth.OnDamagedFrom += OnDamagedFrom;
         }
 
         void OnDestroy()
         {
-            if (playerHealth != null) { playerHealth.OnHealthChanged -= OnHealth; playerHealth.OnShieldChanged -= OnShield; }
-            if (weapon != null) { weapon.OnAmmoChanged -= OnAmmo; weapon.OnHit -= OnWeaponHit; weapon.OnKill -= OnKill; weapon.OnWeaponChanged -= OnWeaponChanged; }
+            if (playerHealth != null) { playerHealth.OnHealthChanged -= OnHealth; playerHealth.OnShieldChanged -= OnShield; playerHealth.OnDamagedFrom -= OnDamagedFrom; }
+            if (weapon != null) { weapon.OnAmmoChanged -= OnAmmo; weapon.OnHit -= OnWeaponHit; weapon.OnKill -= OnKill; weapon.OnWeaponChanged -= OnWeaponChanged; weapon.OnReloadStart -= OnReloadStart; weapon.OnReloadEnd -= OnReloadEnd; }
         }
 
         void OnWeaponChanged()
@@ -73,6 +80,15 @@ namespace FirstGame.UI
                     pulse = 0.16f + 0.12f * Mathf.Sin(Time.time * 5f);
                 _flashAlpha = Mathf.Max(_flashAlpha - Time.deltaTime * 2.8f, pulse);
                 var c = _damageVignette.color; c.a = _flashAlpha; _damageVignette.color = c;
+            }
+
+            // Reload gauge fill + directional damage indicator fade
+            if (_reloading && _reloadFill != null)
+                _reloadFill.fillAmount = _reloadDur > 0f ? Mathf.Clamp01((Time.time - _reloadStart) / _reloadDur) : 1f;
+            if (_dirIndicator != null && _dirAlpha > 0f)
+            {
+                _dirAlpha = Mathf.Max(0f, _dirAlpha - Time.deltaTime * 1.2f);
+                var dc = _dirIndicator.color; dc.a = _dirAlpha; _dirIndicator.color = dc;
             }
 
             if (abilities == null) return;
@@ -152,6 +168,35 @@ namespace FirstGame.UI
             _ammoText = UIFactory.Label(ammoBlock, "13 / 13", 40, ArtPalette.UiText, TextAnchor.LowerRight, FontStyle.Bold);
             UIFactory.Place(_ammoText.rectTransform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-260, 6), new Vector2(260, 52));
 
+            // Reload ring (radial, centre-bottom, hidden until reloading)
+            _reloadGroup = UIFactory.AddChild(root, "ReloadRing").gameObject;
+            UIFactory.Place((RectTransform)_reloadGroup.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -84), new Vector2(52, 52));
+            var rgBg = _reloadGroup.AddComponent<Image>(); rgBg.color = new Color(0, 0, 0, 0.5f);
+            var rgFill = UIFactory.AddChild(_reloadGroup.transform, "Fill");
+            UIFactory.Stretch(rgFill, 4);
+            _reloadFill = rgFill.gameObject.AddComponent<Image>();
+            _reloadFill.color = ArtPalette.NeonCyan;
+            _reloadFill.type = Image.Type.Filled;
+            _reloadFill.fillMethod = Image.FillMethod.Radial360;
+            _reloadFill.fillOrigin = (int)Image.Origin360.Top;
+            _reloadFill.fillAmount = 0f;
+            var rlLabel = UIFactory.Label(_reloadGroup.transform, "RECHARGE", 12, ArtPalette.NeonCyan, TextAnchor.UpperCenter, FontStyle.Bold);
+            UIFactory.Place(rlLabel.rectTransform, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, -18), new Vector2(140, 18));
+            _reloadGroup.SetActive(false);
+
+            // Empty-magazine prompt
+            string rk = Keybinds.KeyName(Keybinds.Get(GameAction.Reload));
+            _reloadPrompt = UIFactory.Label(root, $"[{rk}] RECHARGER", 22, ArtPalette.Enemy, TextAnchor.MiddleCenter, FontStyle.Bold);
+            UIFactory.Place(_reloadPrompt.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -120), new Vector2(320, 30));
+            _reloadPrompt.gameObject.SetActive(false);
+
+            // Directional damage indicator (red blade around the crosshair)
+            var di = UIFactory.AddChild(root, "DamageDir");
+            UIFactory.Place(di, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 150), new Vector2(64, 16));
+            _dirIndicator = di.gameObject.AddComponent<Image>();
+            _dirIndicator.color = new Color(0.92f, 0.15f, 0.15f, 0f);
+            _dirRt = di;
+
             // Ability slots (bottom-centre): labels follow the current keybinds.
             string[] keys =
             {
@@ -230,7 +275,42 @@ namespace FirstGame.UI
 
         void OnAmmo(int ammo, int mag)
         {
-            if (_ammoText != null) _ammoText.text = $"{ammo} / {mag}";
+            if (_ammoText != null)
+            {
+                _ammoText.text = $"{ammo} / {mag}";
+                _ammoText.color = (mag > 0 && ammo <= mag * 0.25f) ? HpRed : ArtPalette.UiText;
+            }
+            if (_reloadPrompt != null) _reloadPrompt.gameObject.SetActive(ammo == 0 && !_reloading);
+        }
+
+        void OnReloadStart()
+        {
+            _reloading = true;
+            _reloadStart = Time.time;
+            _reloadDur = weapon != null ? weapon.weapon.reloadSeconds : 1.5f;
+            if (_reloadGroup) _reloadGroup.SetActive(true);
+            if (_reloadPrompt) _reloadPrompt.gameObject.SetActive(false);
+        }
+
+        void OnReloadEnd()
+        {
+            _reloading = false;
+            if (_reloadGroup) _reloadGroup.SetActive(false);
+        }
+
+        void OnDamagedFrom(Vector3 source)
+        {
+            var cam = Camera.main;
+            if (cam == null || _dirRt == null) return;
+            Vector3 to = source - cam.transform.position; to.y = 0f;
+            if (to.sqrMagnitude < 0.001f) return;
+            Vector3 fwd = cam.transform.forward; fwd.y = 0f;
+            Vector3 right = cam.transform.right; right.y = 0f;
+            float ang = Mathf.Atan2(Vector3.Dot(to, right.normalized), Vector3.Dot(to, fwd.normalized));
+            const float r = 150f;
+            _dirRt.anchoredPosition = new Vector2(Mathf.Sin(ang) * r, Mathf.Cos(ang) * r);
+            _dirRt.localRotation = Quaternion.Euler(0f, 0f, -ang * Mathf.Rad2Deg);
+            _dirAlpha = 1f;
         }
 
         void OnWeaponHit(IDamageable target, float dmg, bool headshot)

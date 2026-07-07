@@ -15,6 +15,14 @@ namespace FirstGame.Player
         public event Action<float, float> OnHealthChanged; // (health, maxHealth)
         public event Action<float> OnShieldChanged;
         public event Action OnDied;
+        public event Action<Vector3> OnDamagedFrom; // world position of the attacker (for the HUD indicator)
+
+        /// <summary>Damage that remembers where it came from, so the HUD can point at the attacker.</summary>
+        public void TakeDamageFrom(float amount, Vector3 sourceWorld)
+        {
+            OnDamagedFrom?.Invoke(sourceWorld);
+            TakeDamage(amount, sourceWorld, Vector3.zero);
+        }
 
         public Vector3 SpawnPoint;
         float _regenPerSecond;
