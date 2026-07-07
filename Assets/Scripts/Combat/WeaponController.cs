@@ -33,7 +33,9 @@ namespace FirstGame.Combat
         public event Action OnWeaponChanged;
         public event Action<bool> OnKill;                    // (wasHeadshot) a shot killed the target
 
-        public float baseSpreadDeg = 1.6f; // hip-fire cone at Contrôle 0; reduced by the stat + ADS
+        public float baseSpreadDeg = 1.6f; // hip-fire cone; reduced by ADS
+        public float passiveDamageMul = 1f; // from passive skills
+        public float reloadMul = 1f;        // from passive skills (<1 = faster)
         FirstPersonController _fpc;
 
         void Awake()
@@ -132,7 +134,7 @@ namespace FirstGame.Combat
         {
             if (Reloading || Ammo >= weapon.magazineSize) return;
             Reloading = true;
-            _reloadEndTime = Time.time + weapon.reloadSeconds;
+            _reloadEndTime = Time.time + weapon.reloadSeconds * reloadMul;
             OnReloadStart?.Invoke();
         }
 
@@ -169,7 +171,7 @@ namespace FirstGame.Combat
                 if (target != null && target.IsAlive)
                 {
                     bool headshot = head != null;
-                    float damage = weapon.damage * (headshot ? weapon.headshotMultiplier : 1f) * PlayerProfile.Current.DamageMultiplier;
+                    float damage = weapon.damage * (headshot ? weapon.headshotMultiplier : 1f) * PlayerProfile.Current.DamageMultiplier * passiveDamageMul;
                     float dealt = target.TakeDamage(damage, hit.point, hit.normal);
                     OnHit?.Invoke(target, dealt, headshot);
                     if (!target.IsAlive) OnKill?.Invoke(headshot);

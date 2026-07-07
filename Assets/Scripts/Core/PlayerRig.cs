@@ -97,6 +97,8 @@ namespace FirstGame.Core
 
             // Agent passive (Élan Ardent / Emprise / Onde de Choc / Garde)
             player.AddComponent<FirstGame.Agents.AgentPassiveSystem>().Init(r);
+            // Passive skills (the 3 chosen from the 100)
+            player.AddComponent<FirstGame.Abilities.PassiveSystem>().Init(r);
 
             return r;
         }

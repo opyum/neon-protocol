@@ -26,6 +26,7 @@ namespace FirstGame.Player
 
         public Vector3 SpawnPoint;
         float _regenPerSecond;
+        float _bonusReduction; // from passive skills
         float _lastDamageTime = -999f;
         const float RegenDelay = 5f;
 
@@ -58,6 +59,7 @@ namespace FirstGame.Player
             _lastDamageTime = Time.time;
 
             amount *= 1f - PlayerProfile.Current.DamageReduction; // Défense stat
+            amount *= 1f - _bonusReduction;                       // passive skills
             float remaining = amount;
             if (Shield > 0f)
             {
@@ -84,6 +86,16 @@ namespace FirstGame.Player
         {
             Shield += amount;
             OnShieldChanged?.Invoke(Shield);
+        }
+
+        /// <summary>Apply passive-skill bonuses (extra max HP, out-of-combat regen, damage reduction).</summary>
+        public void ApplyPassives(float bonusHp, float bonusRegen, float bonusReduction)
+        {
+            MaxHealth += bonusHp;
+            Health += bonusHp;
+            _regenPerSecond += bonusRegen;
+            _bonusReduction = Mathf.Clamp01(bonusReduction);
+            OnHealthChanged?.Invoke(Health, MaxHealth);
         }
 
         /// <summary>Raise the out-of-combat regen rate to at least <paramref name="perSecond"/>

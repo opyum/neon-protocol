@@ -42,6 +42,46 @@ namespace FirstGame.Abilities
 
         static Color Hex(string h) => ArtPalette.Hex(h);
 
+        static AbilityCatalog() => GenerateExtra();
+
+        /// <summary>Fills the roster up to 100 active spells by combining elements with effect families.</summary>
+        static void GenerateExtra()
+        {
+            var elems = new (string name, string col)[]
+            {
+                ("Feu","#FF5A36"), ("Givre","#7FD4F0"), ("Foudre","#FFD23F"), ("Poison","#8BE04E"),
+                ("Vent","#B8F0E6"), ("Lumière","#F5D76E"), ("Ombre","#6B4FA0"), ("Terre","#B07A4B"),
+                ("Arcane","#C24DFF"), ("Solaire","#FFB01F"), ("Sang","#C0304E"), ("Néant","#5A6B8C"),
+            };
+            var fams = new (string prefix, string type, AbilityEffect eff, float cd, int ch, float dmg, string desc)[]
+            {
+                ("Trait de",   "basique",   AbilityEffect.DamageBurst, 8f,  2, 42f, "Projectile élémentaire. {d} dégâts à l'impact."),
+                ("Ruée de",    "basique",   AbilityEffect.Dash,        10f, 2, 26f, "Dash de 6m qui traverse les ennemis. {d} dégâts."),
+                ("Zone de",    "signature", AbilityEffect.Zone,        14f, 1, 12f, "Zone au sol 6s : {d} dégâts/s."),
+                ("Mur de",     "basique",   AbilityEffect.Wall,        14f, 1, 0f,  "Érige un mur opaque 8s (bloque vue & balles)."),
+                ("Égide de",   "signature", AbilityEffect.Shield,      20f, 1, 0f,  "Bouclier de 60 PV pendant 5s."),
+                ("Vague de",   "basique",   AbilityEffect.Heal,        12f, 1, 0f,  "Soigne 40 PV instantanément."),
+                ("Souffle de", "basique",   AbilityEffect.Knockback,   9f,  2, 0f,  "Repousse les ennemis de 5m."),
+                ("Voile de",   "signature", AbilityEffect.Smoke,       18f, 2, 0f,  "Nuage bloquant la vision 12s."),
+            };
+            for (int fi = 0; fi < fams.Length; fi++)
+            {
+                var f = fams[fi];
+                for (int ei = 0; ei < elems.Length; ei++)
+                {
+                    if (All.Count >= 100) return;
+                    string name = $"{f.prefix} {elems[ei].name}";
+                    if (All.Exists(a => a.nameFr == name)) continue;
+                    All.Add(new AbilityData
+                    {
+                        id = $"gen_{fi}_{ei}", nameFr = name, type = f.type, element = elems[ei].name,
+                        cooldown = f.cd, charges = f.ch, damage = f.dmg, effect = f.eff,
+                        color = Hex(elems[ei].col), descriptionFr = f.desc.Replace("{d}", f.dmg.ToString("0")),
+                    });
+                }
+            }
+        }
+
         /// <summary>Default 3-ability loadout for the tutorial: a damage ability on E, a dash, and a heal/shield.</summary>
         public static AbilityData[] DefaultLoadout => new[]
         {

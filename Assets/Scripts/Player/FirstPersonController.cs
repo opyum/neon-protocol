@@ -39,7 +39,8 @@ namespace FirstGame.Player
         float BuffMul => Time.time < _buffUntil ? _buffMul : 1f;
 
         public bool ControlEnabled = true;
-        public float equipSpeedMul = 1f; // set by equipment (armour)
+        public float equipSpeedMul = 1f;    // set by equipment (armour)
+        public float passiveSpeedMul = 1f;  // set by passive skills
 
         /// <summary>Apply a timed speed multiplier (latest call wins). Used by agent passives.</summary>
         public void AddSpeedBuff(float multiplier, float duration)
@@ -115,7 +116,7 @@ namespace FirstGame.Player
             Vector3 dir = transform.right * x + transform.forward * z;
             if (dir.sqrMagnitude > 1f) dir.Normalize();
 
-            float speed = baseMoveSpeed * _speedMul * equipSpeedMul * BuffMul;
+            float speed = baseMoveSpeed * _speedMul * equipSpeedMul * passiveSpeedMul * BuffMul;
             if (Keybinds.Held(GameAction.Sprint)) speed *= sprintMultiplier;
 
             Vector3 horizontal = dir * speed;

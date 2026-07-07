@@ -30,6 +30,8 @@ namespace FirstGame.Abilities
         readonly float[] _lockUntil = new float[3];  // brief re-use lock after a cast
         float _powerMul = 1f;
         float _cdMul = 1f;
+        public float passiveDamageMul = 1f; // from passive skills
+        public float passiveCdMul = 1f;     // from passive skills (<1 = faster)
 
         // ---- Agent passive hooks (set by AgentPassiveSystem before first cast) ----
         /// <summary>Nocturne (Emprise): multiplies the lifetime of wall/smoke/zone volumes.</summary>
@@ -51,8 +53,8 @@ namespace FirstGame.Abilities
         /// changes their build mid-scene (loadout screen).</summary>
         public void ReloadLoadout()
         {
-            _powerMul = PlayerProfile.Current.AbilityPowerMultiplier;
-            _cdMul = PlayerProfile.Current.CooldownMultiplier;
+            _powerMul = PlayerProfile.Current.AbilityPowerMultiplier * passiveDamageMul;
+            _cdMul = PlayerProfile.Current.CooldownMultiplier * passiveCdMul;
 
             var loadout = AbilityCatalog.ResolveLoadout(PlayerProfile.Current);
             for (int i = 0; i < 3; i++)
