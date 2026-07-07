@@ -132,9 +132,9 @@ namespace FirstGame.UI
 
             _buildPanel = BuildSubmenu(root, "BuildPanel", "MON BUILD", new (string, string, Color, System.Action)[]
             {
-                ("SORTS & ARMES", "Choisis tes 3 sorts et tes armes",  ArtPalette.Objective, () => { _loadoutPanel.SetActive(true); RefreshLoadout(); }),
-                ("CLASSE",        "Choisis ta classe et sa passive",   ArtPalette.NeonMag,   () => { _agentsPanel.SetActive(true); RefreshAgents(); }),
-                ("PERSONNAGE",    "Niveaux & points de statistiques",  ArtPalette.Player,    () => { _characterPanel.SetActive(true); RefreshCharacter(); }),
+                ("SORTS & ARMES", "Choisis tes 3 sorts et tes armes",  ArtPalette.Objective, () => { Open(_loadoutPanel); RefreshLoadout(); }),
+                ("CLASSE",        "Choisis ta classe et sa passive",   ArtPalette.NeonMag,   () => { Open(_agentsPanel); RefreshAgents(); }),
+                ("PERSONNAGE",    "Niveaux & points de statistiques",  ArtPalette.Player,    () => { Open(_characterPanel); RefreshCharacter(); }),
             });
         }
 
@@ -161,12 +161,21 @@ namespace FirstGame.UI
         {
             switch (index)
             {
-                case 0: _playPanel.SetActive(true); break;
-                case 1: _buildPanel.SetActive(true); break;
-                case 2: _optionsPanel.SetActive(true); break;
+                case 0: Open(_playPanel); break;
+                case 1: Open(_buildPanel); break;
+                case 2: Open(_optionsPanel); break;
                 case 3: Quit(); break;
                 default: break;
             }
+        }
+
+        /// <summary>Show a panel on top (fixes z-order: panels built before the sub-menus would
+        /// otherwise open behind them).</summary>
+        void Open(GameObject panel)
+        {
+            if (panel == null) return;
+            panel.transform.SetAsLastSibling();
+            panel.SetActive(true);
         }
 
         void RefreshLevelChip()
@@ -373,7 +382,7 @@ namespace FirstGame.UI
             var toEquip = UIFactory.AddChild(t, "ToEquip");
             UIFactory.Place(toEquip, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(320, 60));
             UIFactory.Button(toEquip, "ÉQUIPEMENT ▶", ArtPalette.Objective, ArtPalette.UiInk,
-                () => { _loadoutPanel.SetActive(false); _equipmentPanel.SetActive(true); RefreshEquipment(); }, 22);
+                () => { _loadoutPanel.SetActive(false); Open(_equipmentPanel); RefreshEquipment(); }, 22);
 
             var close = UIFactory.AddChild(t, "CloseLoadout");
             UIFactory.Place(close, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-90, 50), new Vector2(240, 60));
@@ -400,7 +409,7 @@ namespace FirstGame.UI
             var toSpells = UIFactory.AddChild(t, "ToSpells");
             UIFactory.Place(toSpells, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(320, 60));
             UIFactory.Button(toSpells, "◀ ARME & SORTS", ArtPalette.Cover, ArtPalette.UiText,
-                () => { _equipmentPanel.SetActive(false); _loadoutPanel.SetActive(true); RefreshLoadout(); }, 22);
+                () => { _equipmentPanel.SetActive(false); Open(_loadoutPanel); RefreshLoadout(); }, 22);
 
             var close = UIFactory.AddChild(t, "CloseEquip");
             UIFactory.Place(close, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-90, 50), new Vector2(240, 60));
