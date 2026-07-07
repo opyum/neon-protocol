@@ -43,8 +43,13 @@ namespace FirstGame.Net
 
             var title = UIFactory.Label(root, "MULTIJOUEUR — 1v1 (réseau local)", 44, ArtPalette.NeonMag, TextAnchor.UpperCenter, FontStyle.Bold);
             UIFactory.Place(title.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -110), new Vector2(1300, 60));
-            var sub = UIFactory.Label(root, "Phase 1 : voir l'autre joueur bouger. Un joueur HÉBERGE, l'autre REJOINT (même PC : 127.0.0.1).", 20, ArtPalette.UiDim, TextAnchor.UpperCenter);
+            var sub = UIFactory.Label(root, "Compose ton build, puis un joueur HÉBERGE et l'autre REJOINT (même PC : 127.0.0.1).", 20, ArtPalette.UiDim, TextAnchor.UpperCenter);
             UIFactory.Place(sub.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -176), new Vector2(1300, 30));
+
+            var build = UIFactory.AddChild(root, "BuildBtn");
+            UIFactory.Place(build, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -228), new Vector2(380, 54));
+            UIFactory.Button(build, "COMPOSER MON BUILD", ArtPalette.NeonMag, ArtPalette.UiInk,
+                () => new GameObject("[Loadout]").AddComponent<LoadoutScreen>().Show(() => { }), 22);
 
             if (!prefabOk)
             {
