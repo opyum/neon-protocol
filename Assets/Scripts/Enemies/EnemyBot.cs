@@ -197,9 +197,10 @@ namespace FirstGame.Enemies
 
         bool HasLineOfSight(Vector3 dir, float dist)
         {
-            if (Physics.Raycast(Eye, dir, out var hit, dist, _mask, QueryTriggerInteraction.Ignore))
-                return hit.distance >= dist - 1.0f; // player is on IgnoreRaycast, so a nearer hit = blocker
-            return true;
+            // The player is on the IgnoreRaycast layer, so ANY collider between the eye and the aim
+            // point is an obstacle (wall / cover / another bot) → no clean shot. A Linecast avoids the
+            // distance-tolerance edge cases of the old raycast.
+            return !Physics.Linecast(Eye, AimPoint, _mask, QueryTriggerInteraction.Ignore);
         }
 
         void Fire(float dist)

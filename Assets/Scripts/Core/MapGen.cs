@@ -115,8 +115,10 @@ namespace FirstGame.Core
                 for (int i = 0; i < segs; i++)
                 {
                     float t = (i + 0.5f) / segs - 0.5f;
-                    ModelUtil.SpawnProp(prefab, arena, groundCenter + dir * (len * t), alongX ? 0f : 90f, 3.4f, byHeight: true, material: null);
+                    var seg = ModelUtil.SpawnProp(prefab, arena, groundCenter + dir * (len * t), alongX ? 0f : 90f, 3.4f, byHeight: true, material: null);
+                    var oc = seg.GetComponent<Collider>(); if (oc) Object.Destroy(oc); // visual only — a tight collider is added below
                 }
+                AddWallCollider(arena, groundCenter, len, alongX); // one solid, tight collider (reliable LOS + movement)
             }
             else
             {
@@ -124,6 +126,15 @@ namespace FirstGame.Core
                 var go = Prim.Box(arena, groundCenter + Vector3.up * 1.6f, size, ArtPalette.Wall, name: "Wall");
                 var r = go.GetComponent<Renderer>(); if (r) r.sharedMaterial = Surfaces.Metal;
             }
+        }
+
+        static void AddWallCollider(Transform arena, Vector3 groundCenter, float len, bool alongX)
+        {
+            var go = new GameObject("WallCollider");
+            go.transform.SetParent(arena, false);
+            go.transform.localPosition = groundCenter + Vector3.up * 1.6f;
+            var bc = go.AddComponent<BoxCollider>();
+            bc.size = alongX ? new Vector3(len, 3.2f, 0.7f) : new Vector3(0.7f, 3.2f, len);
         }
 
         static void Cover(Transform arena, Vector3 pos, System.Random rng)
